@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <title>IO Game</title>
+    <body>
+        <!--Create the game here-->
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Starship.io</title>
+          <style>
+              /* Basic reset and center styling */
+              * {
+                  margin: 0;
+                  padding: 0;
+                  box-sizing: border-box;
+                  font-family: Arial, sans-serif;
+              }
+      
+              body, html {
+                  height: 100%;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  background-color: #000;
+                  color: #FFF;
+              }
+      
+              .start-screen {
+                  text-align: center;
+              }
+      
+              h1 {
+                  font-size: 3em;
+                  color: #FFD700; /* Gold color for title */
+                  text-shadow: 2px 2px 8px #FF4500; /* Glow effect */
+              }
+      
+              .instructions {
+                  font-size: 1.2em;
+                  margin: 20px 0;
+              }
+      
+              .instructions p {
+                  margin-bottom: 10px;
+              }
+      
+              .start-button {
+                  font-size: 1.5em;
+                  padding: 10px 20px;
+                  color: #FFF;
+                  background-color: #007BFF; /* Bright blue button */
+                  border: none;
+                  border-radius: 8px;
+                  cursor: pointer;
+                  transition: background-color 0.3s ease;
+              }
+      
+              .start-button:hover {
+                  background-color: #0056b3;
+              }
+          </style>
+      </head>
+      <body>
+          <div class="start-screen">
+              <h1>Starship.io</h1>
+              
+              <div class="instructions">
+                  <p>Welcome to the Starship.io!</p>
+                  <p>Navigate your ship, avoid asteroids, and survive as long as you can.</p>
+                  <p>Controls:</p>
+                  <ul>
+                      <li>Arrow Keys to Move</li>
+                      <li>Spacebar to Shoot</li>
+                  </ul>
+              </div>
+      
+              <button class="start-button" onclick="startGame()">Start Game</button>
+          </div>
+      
+
+        <!--load the socket.io-client, which exposes an io global (and the endpoint GET /socket.io/socket.io.js), and then connect.-->
+        <script src="/socket.io/socket.io.js"></script>
+        <script>
+          const socket = io();
+        </script>   
+    </body>
+</html>
