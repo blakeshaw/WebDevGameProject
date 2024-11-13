@@ -7,10 +7,15 @@
     <title>Asteroids Game</title>
     <style>
         /* Set the size of the game area */
+        body {
+            position: absolute;
+            height: 99%;
+            width: 99%;
+        }
         #viewport {
             position: relative;
-            width: 1000px;
-            height: 1000px;
+            width: 100%;
+            height: 99%;
             overflow: hidden;
             background-color: black;
             border: 1px solid black;
@@ -49,7 +54,6 @@
 </head>
 
 <body>
-    <h1>Asteroids Game</h1>
     <div id="viewport">
         <div id="game-area"></div>
     </div>
@@ -148,8 +152,10 @@
             //Clear previous render
             gameArea.innerHTML = "";
 
-            const offsetX = 500 - ship.x;
-            const offsetY = 500 - ship.y;
+            const windowWidth = document.getElementById("viewport").offsetWidth;
+            const windowHeight = document.getElementById("viewport").offsetHeight;
+            const offsetX = (windowWidth / 2) - ship.x;
+            const offsetY = (windowHeight / 2) - ship.y;
 
             //Render the border
             gameArea.style.left = offsetX + "px";
@@ -163,7 +169,7 @@
                 playerElement.style.top = `${player.y}px`;
                 playerElement.style.transform = `rotate(${player.angle}deg)`;
 
-                if ((player.x + offsetX >= -100 && player.x + offsetX <= 1100) && (player.y + offsetY >= -100 && player.y + offsetY <= 1100)) {
+                if ((player.x + offsetX >= -100 && player.x + offsetX <= (windowWidth + 100)) && (player.y + offsetY >= -100 && player.y + offsetY <= (windowHeight + 100))) {
                     gameArea.appendChild(playerElement);
                 }
             });
@@ -177,7 +183,7 @@
                 asteroidElement.style.width = asteroid.size + "px";
                 asteroidElement.style.height = asteroid.size + "px";
 
-                if ((asteroid.x + offsetX >= -100 && asteroid.x + offsetX <= 1100) && (asteroid.y + offsetY >= -100 && asteroid.y + offsetY <= 1100)) {
+                if ((asteroid.x + offsetX >= -100 && asteroid.x + offsetX <= windowWidth + 100) && (asteroid.y + offsetY >= -100 && asteroid.y + offsetY <= windowHeight + 100)) {
                     gameArea.appendChild(asteroidElement);
                 }
             });
