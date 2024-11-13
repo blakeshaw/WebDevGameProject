@@ -1,89 +1,173 @@
 <!DOCTYPE html>
 <html>
-  <head>
+
+<head>
     <meta name="viewport" content="width=device-width,initial-scale=1.0">
     <title>IO Game</title>
-    <body>
-        <!--Create the game here-->
-        <head>
-          <meta charset="UTF-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>Starship.io</title>
-          <style>
-              /* Basic reset and center styling */
-              * {
-                  margin: 0;
-                  padding: 0;
-                  box-sizing: border-box;
-                  font-family: Arial, sans-serif;
-              }
-      
-              body, html {
-                  height: 100%;
-                  display: flex;
-                  align-items: center;
-                  justify-content: center;
-                  background-color: #000;
-                  color: #FFF;
-              }
-      
-              .start-screen {
-                  text-align: center;
-              }
-      
-              h1 {
-                  font-size: 3em;
-                  color: #FFD700; /* Gold color for title */
-                  text-shadow: 2px 2px 8px #FF4500; /* Glow effect */
-              }
-      
-              .instructions {
-                  font-size: 1.2em;
-                  margin: 20px 0;
-              }
-      
-              .instructions p {
-                  margin-bottom: 10px;
-              }
-      
-              .start-button {
-                  font-size: 1.5em;
-                  padding: 10px 20px;
-                  color: #FFF;
-                  background-color: #007BFF; /* Bright blue button */
-                  border: none;
-                  border-radius: 8px;
-                  cursor: pointer;
-                  transition: background-color 0.3s ease;
-              }
-      
-              .start-button:hover {
-                  background-color: #0056b3;
-              }
-          </style>
-      </head>
-      <body>
-          <div class="start-screen">
-              <h1>Starship.io</h1>
-              
-              <div class="instructions">
-                  <p>Welcome to the Starship.io!</p>
-                  <p>Navigate your ship, avoid asteroids, and survive as long as you can.</p>
-                  <p>Controls:</p>
-                  <ul>
-                      <li>Arrow Keys to Move</li>
-                      <li>Spacebar to Shoot</li>
-                  </ul>
-              </div>
-      
-              <button class="start-button" onclick="startGame()">Start Game</button>
-          </div>
-      
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Starship.io</title>
+    <style>
+        /* Basic reset and center styling */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
 
-        <!--load the socket.io-client, which exposes an io global (and the endpoint GET /socket.io/socket.io.js), and then connect.-->
-        <script src="/socket.io/socket.io.js"></script>
-        <script>
-          const socket = io();
-        </script>   
-    </body>
+        body,
+        html {
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #000;
+            color: #FFF;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .start-screen {
+            text-align: center;
+            position: relative;
+            z-index: 10;
+        }
+
+        h1 {
+            font-size: 3em;
+            color: #FFD700;
+            /* Gold color for title */
+            text-shadow: 2px 2px 8px #FF4500;
+            /* Glow effect */
+        }
+
+        .instructions {
+            font-size: 1.2em;
+            margin: 20px 0;
+        }
+
+        .instructions p {
+            margin-bottom: 10px;
+        }
+
+        #start-button {
+            font-size: 1.5em;
+            padding: 10px 20px;
+            color: #FFF;
+            background-color: #007BFF;
+            /* Bright blue button */
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        #start-button:hover {
+            background-color: #0056b3;
+        }
+
+        .asteroid {
+            width: 40px;
+            height: 40px;
+            background-color: #ff6347;
+            border-radius: 50%;
+            position: absolute;
+            border: 2px solid #ff6347;
+            /* Add a border to make the asteroids visible */
+        }
+
+        /* Background container for moving asteroids */
+        #gameArea {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Background container for asteroids -->
+    <div id="gameArea"></div>
+
+    <div class="start-screen">
+        <h1>Starship.io</h1>
+
+        <div class="instructions">
+            <p>Welcome to the Starship.io!</p>
+            <p>Navigate your ship, avoid asteroids, and survive as long as you can.</p>
+            <p>Controls:</p>
+            <ul>
+                <p>WASD Keys to Move</p>
+                <p>Spacebar to Shoot</p>
+            </ul>
+        </div>
+        <button id="start-button">Start Game</button>
+    </div>
+
+    <!-- load the socket.io-client -->
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+
+        const startButton = document.getElementById('start-button');
+        startButton.addEventListener('click', () => {
+            window.location.href = '/game';
+        });
+
+        // Home screen asteroids setup
+        const gameArea = document.getElementById("gameArea");
+        let asteroids = [];
+
+        function createAsteroids() {
+            for (let i = 0; i < 20; i++) {
+                asteroids.push({
+                    x: Math.random() * window.innerWidth,
+                    y: Math.random() * window.innerHeight,
+                    velocityX: (Math.random() - 0.5) * 2,
+                    velocityY: (Math.random() - 0.5) * 2,
+                });
+            }
+        }
+
+        function moveAsteroids() {
+            asteroids.forEach(asteroid => {
+                asteroid.x += asteroid.velocityX;
+                asteroid.y += asteroid.velocityY;
+
+                // Wrap asteroids around edges
+                if (asteroid.x < 0) asteroid.x = window.innerWidth;
+                if (asteroid.x > window.innerWidth) asteroid.x = 0;
+                if (asteroid.y < 0) asteroid.y = window.innerHeight;
+                if (asteroid.y > window.innerHeight) asteroid.y = 0;
+            });
+        }
+
+        function render() {
+            gameArea.innerHTML = "";
+
+            // Render asteroids
+            asteroids.forEach(asteroid => {
+                const asteroidElement = document.createElement("div");
+                asteroidElement.classList.add("asteroid");
+                asteroidElement.style.left = asteroid.x + "px";
+                asteroidElement.style.top = asteroid.y + "px";
+                gameArea.appendChild(asteroidElement);
+            });
+        }
+
+        function gameLoop() {
+            moveAsteroids();
+            render();
+            requestAnimationFrame(gameLoop);
+        }
+
+        createAsteroids();
+        gameLoop();
+    </script>
+</body>
+
 </html>
