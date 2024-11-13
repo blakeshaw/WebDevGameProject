@@ -13,6 +13,8 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // global variables
 let player = {};
+let asteroids = [];
+
 let width = 5000;
 let height = 5000;
 
@@ -29,27 +31,61 @@ app.get('/game', (req, res) => {
 // Then listen on the connection event for incoming sockets and log it to the console
 io.on('connection', (socket) => {
     console.log("user " + socket.id + " connected")
+    socket.emit("asteroids", asteroids)
+
+    //When the client connects it sends the client ID which is used to make a new player.
     socket.on('client-id', async(id) => {
       player[socket.id] = {
         x: Math.random() * width,
         y: Math.random() * height,
+        velocityX: 0,
+        velocityY: 0,
+        angle: 0,
         health: 3,
         score: 0
       }
-      console.log(player[socket.id]);
+      socket.emit("players", player);
+      //console.log(player[socket.id]);
     });
+    //When the user wants to update their player on the server it sends updatePlayer
+    socket.on("updatePlayer", async(id, ship) => {
+      player[id] = ship
+      //Send back the list of updated players
+      socket.emit("players", player);
+    });
+    socket.on("updateAsteroids", async(all_asteroids) =>{
+      asteroids = all_asteroids;
+      socket.emit("asteroids", asteroids);
+    });
+
+    //Remove player from list of players when they disconnect.
     socket.on('disconnect', () => {
         console.log("user " + socket.id + " disconnected");
         try{
           delete player[socket.id];
         } catch (error) {
-          // Ignoring the start screen player
+          // Ignoring the start screen players
         }
         // console.log(player);
     });
 });
 
+function makeAsteroids(){
+  for (let i = 0; i < 100; i++) {
+    asteroids.push({
+        x: Math.random() * width,
+        y: Math.random() * height,
+        velocityX: (Math.random() - 0.5) * 1.5,
+        velocityY: (Math.random() - 0.5) * 1.5,
+        size: 50,
+    });
+  }
+}
+makeAsteroids();
+
 // Start the server
 server.listen(3099, () => {
   console.log('server running at http://localhost:3099');
 });
+
+

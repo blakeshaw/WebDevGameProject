@@ -5,18 +5,195 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Asteroids Game</title>
+    <style>
+        /* Set the size of the game area */
+        #viewport {
+            position: relative;
+            width: 1000px;
+            height: 1000px;
+            overflow: hidden;
+            background-color: black;
+            border: 1px solid black;
+            margin: 0 auto;
+        }
+
+        #game-area{
+            position: absolute;
+            width: 5000px;
+            height: 5000px;
+            background-color: black;
+            border: 5px solid red;
+        }
+
+        /* Style for each player (simple placeholder for demonstration) */
+        .player {
+            position: absolute;
+            width: 0;
+            height: 0;
+            border-width: 0 10px 20px 10px;
+            border-style: solid;
+            background-color: transparent;
+            border-color: transparent transparent #76c7c0 transparent;
+            transform-origin: 50% 50%;
+        }
+
+        .asteroid {
+            background-color: #ff6347;
+            border-radius: 50%;
+            position: absolute;
+            border: 2px solid #ff6347;
+            /* Add a border to make the asteroids visible */
+        }
+    </style>
     <!-- <link rel="stylesheet" href="styles.css"> -->
 </head>
 
 <body>
     <h1>Asteroids Game</h1>
-    <div id="game-area"></div>
-    <p id="score">Score: 0</p>
+    <div id="viewport">
+        <div id="game-area"></div>
+    </div>
+
     <!-- <script src="script.js"></script> -->
     <script src="/socket.io/socket.io.js"></script>
     <script>
         const socket = io();
         socket.emit('client-id', socket.id);
+
+        let keys = {}; //keep track of which keys are pressed
+        document.addEventListener("keydown", e => keys[e.key] = true);
+        document.addEventListener("keyup", e => keys[e.key] = false);
+
+        const gameArea = document.getElementById("game-area");
+        const game_area_x = 5000;
+        const game_area_y = 5000;
+
+        let ship = {
+            x: 2500,
+            y: 2500,
+            velocityX: 0,
+            velocityY: 0,
+            angle: 0,
+            health: 3,
+            score: 0
+        }
+        let players = {};
+        let asteroids = [];
+        socket.on("players", (all_players) => {
+            players = all_players;
+            ship = all_players[socket.id];
+        });
+        socket.on("asteroids", (all_asteroids) => {
+            asteroids = all_asteroids;
+        });
+        function makeAsteroids() {
+            for (let i = 0; i < 100; i++) {
+                asteroids.push({
+                    x: Math.random() * game_area_x,
+                    y: Math.random() * game_area_y,
+                    velocityX: (Math.random() - 0.5) * 1.5,
+                    velocityY: (Math.random() - 0.5) * 1.5,
+                    size: 50,
+                });
+            }
+        }
+        makeAsteroids();
+
+
+        function controlPlayer() {
+            if (keys["ArrowLeft"]) ship.angle -= 1.5;
+            if (keys["ArrowRight"]) ship.angle += 1.5;
+            if (keys["ArrowUp"]) {
+                ship.velocityX += Math.sin(ship.angle * Math.PI / 180) * 0.01;
+                ship.velocityY += Math.cos(ship.angle * Math.PI / 180) * 0.01;
+            }
+            //Move the ship
+            ship.x += ship.velocityX;
+            ship.y -= ship.velocityY;
+
+            if (ship.x < 0){
+                ship.x = 0;
+                ship.velocityX = 0;
+            }
+            if (ship.x > game_area_x){
+                ship.x = game_area_x;
+                ship.velocityX = 0;
+            }
+            if (ship.y < 0){
+                ship.y = 0;
+                ship.velocityY = 0;
+            }
+            if (ship.y > game_area_y){
+                ship.y = game_area_y;
+                ship.velocityY = 0;
+            }
+
+            socket.emit("updatePlayer", socket.id, ship);
+        }
+        function controlAsteroids() {
+            asteroids.forEach(asteroid => {
+                asteroid.x += asteroid.velocityX;
+                asteroid.y += asteroid.velocityY;
+
+                // Wrap asteroids around edges
+                if (asteroid.x < 0) asteroid.x = game_area_x;
+                if (asteroid.x > game_area_x) asteroid.x = 0;
+                if (asteroid.y < 0) asteroid.y = game_area_y;
+                if (asteroid.y > game_area_y) asteroid.y = 0;
+            });
+            socket.emit("updateAsteroids", asteroids);
+        }
+
+        function render() {
+            //Clear previous render
+            gameArea.innerHTML = "";
+
+            const offsetX = 500 - ship.x;
+            const offsetY = 500 - ship.y;
+
+            //Render the border
+            gameArea.style.left = offsetX + "px";
+            gameArea.style.top = offsetY + "px"
+
+            //Render ships
+            Object.values(players).forEach(player => {
+                const playerElement = document.createElement("div");
+                playerElement.classList.add("player");
+                playerElement.style.left = `${player.x}px`;
+                playerElement.style.top = `${player.y}px`;
+                playerElement.style.transform = `rotate(${player.angle}deg)`;
+
+                if ((player.x + offsetX >= -100 && player.x + offsetX <= 1100) && (player.y + offsetY >= -100 && player.y + offsetY <= 1100)) {
+                    gameArea.appendChild(playerElement);
+                }
+            });
+
+            //Render asteroids
+            asteroids.forEach(asteroid => {
+                const asteroidElement = document.createElement("div");
+                asteroidElement.classList.add("asteroid");
+                asteroidElement.style.left = asteroid.x + "px";
+                asteroidElement.style.top = asteroid.y + "px";
+                asteroidElement.style.width = asteroid.size + "px";
+                asteroidElement.style.height = asteroid.size + "px";
+
+                if ((asteroid.x + offsetX >= -100 && asteroid.x + offsetX <= 1100) && (asteroid.y + offsetY >= -100 && asteroid.y + offsetY <= 1100)) {
+                    gameArea.appendChild(asteroidElement);
+                }
+            });
+
+            //Render ammo -- ready to pick up on the ground
+
+            //Render bullets -- shot bullets
+        }
+
+        function gameLoop() {
+            controlPlayer();
+            controlAsteroids();
+            render();
+            requestAnimationFrame(gameLoop);
+        }
+        gameLoop();
     </script>
 </body>
 
