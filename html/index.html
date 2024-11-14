@@ -105,6 +105,7 @@
                 <p>Spacebar to Shoot</p>
             </ul>
         </div>
+        <input type="text" id="player-name" placeholder="Enter your name">
         <button id="start-button">Start Game</button>
     </div>
 
@@ -114,7 +115,9 @@
         const socket = io();
 
         const startButton = document.getElementById('start-button');
+        const playerNameInput = document.getElementById("player-name");
         startButton.addEventListener('click', () => {
+
             window.location.href = '/game';
         });
 

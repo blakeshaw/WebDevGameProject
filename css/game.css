@@ -3,6 +3,7 @@ body {
     position: absolute;
     height: 99%;
     width: 99%;
+    background: black;
 }
 
 #viewport {
@@ -21,6 +22,7 @@ body {
     height: 5000px;
     background-color: black;
     border: 30px solid orange;
+    transform-origin: top left;
 }
 
 .bullet {

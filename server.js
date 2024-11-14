@@ -37,11 +37,11 @@ app.get('/game', (req, res) => {
 // Then listen on the connection event for incoming sockets and log it to the console
 io.on('connection', (socket) => {
     console.log("user " + socket.id + " connected")
-    socket.emit("asteroids", asteroids)
 
     //When the client connects it sends the client ID which is used to make a new player.
     socket.on('client-id', async(id) => {
       players[socket.id] = {
+        name: id,
         x: Math.random() * width,
         y: Math.random() * height,
         velocityX: 0,
@@ -56,9 +56,8 @@ io.on('connection', (socket) => {
       try{
         delete players[null];
       }catch(error){}
-
-      socket.emit("players", players);
     });
+
     //When the user wants to update their player on the server it sends updatePlayer
     socket.on("updatePlayer", async(id, ship) => {
       players[id] = ship
@@ -202,7 +201,16 @@ function updateBullets() {
         }
       }
     });
-    //TODO: Handle bullet collisions with other players
+    //Handle bullet collisions with players
+    Object.values(players).forEach(player => {
+      const a = bullet.x - (player.x + 10);
+      const b = bullet.y - (player.y + 10);
+      const distance = Math.sqrt((a ** 2) + (b ** 2));
+
+      if(distance < 20){
+        player.health -= bullet.damage;
+      }
+    });
 
     //Update the bullets or remove the bullets if they expired.
     if(bullet.updatesLeft > 0){
@@ -226,5 +234,3 @@ setInterval(updatePlayers, 32);
 server.listen(3099, () => {
   console.log('server running at http://localhost:3099');
 });
-
-

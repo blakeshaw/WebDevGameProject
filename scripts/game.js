@@ -9,18 +9,7 @@ const gameArea = document.getElementById("game-area");
 const game_area_x = 5000;
 const game_area_y = 5000;
 
-let ship = {
-    x: Math.random() * 5000,
-    y: Math.random() * 5000,
-    velocityX: 0,
-    velocityY: 0,
-    angle: 0,
-    health: 3,
-    damage: 1,
-    score: 0,
-    ammo: 0,
-    boostLeft: 0,
-}
+let ship = {}
 let players = {};
 let asteroids = [];
 let bullets = [];
@@ -28,6 +17,11 @@ let ammo = [];
 socket.on("players", (all_players) => {
     players = all_players;
     ship = all_players[socket.id];
+
+    if (ship.health <= 0) {
+        window.location.href = '/';
+        socket.emit("makeAmmo", ship.x, ship.y, ship.ammo);
+    }
 });
 socket.on("asteroids", (all_asteroids) => {
     asteroids = all_asteroids;
@@ -44,16 +38,12 @@ const bulletCooldown = 200;
 function controlPlayer() {
     if (!ship) return;
 
-    if(ship.health == 0){
-        window.location.href = '/';
-    }
-
     if (keys["ArrowLeft"] || keys["a"]) ship.angle -= 1.5;
     if (keys["ArrowRight"] || keys["d"]) ship.angle += 1.5;
     if (keys["ArrowUp"] || keys["w"]) {
         if (Math.abs(ship.velocityX) < 3) ship.velocityX += Math.sin(ship.angle * Math.PI / 180) * 0.01;
         if (Math.abs(ship.velocityY) < 3) ship.velocityY += Math.cos(ship.angle * Math.PI / 180) * 0.01;
-    }else if(keys["ArrowDown"] || keys["s"]) {
+    } else if (keys["ArrowDown"] || keys["s"]) {
         if (Math.abs(ship.velocityX) < 3) ship.velocityX -= Math.sin(ship.angle * Math.PI / 180) * 0.002;
         if (Math.abs(ship.velocityY) < 3) ship.velocityY -= Math.cos(ship.angle * Math.PI / 180) * 0.002;
     } else {
@@ -93,8 +83,8 @@ function controlPlayer() {
     socket.emit("updatePlayer", socket.id, ship);
 }
 
-function updateHUD(){
-    if(!ship) return;
+function updateHUD() {
+    if (!ship) return;
     document.getElementById("health").textContent = `Health: ${ship.health}`;
     document.getElementById("score").textContent = `Score: ${ship.score}`;
     document.getElementById("ammo").textContent = `Ammo: ${ship.ammo}`;
@@ -116,7 +106,7 @@ function render() {
 
     //Render ammo -- unshot bullets
     ammo.forEach((piece, index) => {
-        if(!piece) return;
+        if (!piece) return;
         if ((piece.x + offsetX >= -100 && piece.x + offsetX <= windowWidth + 100) && (piece.y + offsetY >= -100 && piece.y + offsetY <= windowHeight + 100)) {
             const ammoElement = document.createElement("div");
             ammoElement.classList.add("ammo");
@@ -132,11 +122,11 @@ function render() {
             const b = ship.y - (piece.y + (piece.amount / 2));
             const distance = Math.sqrt((a ** 2) + (b ** 2));
 
-            if(distance < 50){
+            if (distance < 50) {
                 piece.x += (ship.x - piece.x) * 0.2;
                 piece.y += (ship.y - piece.y) * 0.2;
                 socket.emit("updateAmmo", piece, index);
-                if(distance < 10){
+                if (distance < 10) {
                     ship.ammo += piece.amount;
                     ship.score += piece.amount;
                     ammo.splice(index, 1);
@@ -149,7 +139,7 @@ function render() {
 
     //Render ships
     Object.values(players).forEach(player => {
-        if(!player) return;
+        if (!player) return;
         if ((player.x + offsetX >= -100 && player.x + offsetX <= (windowWidth + 100)) && (player.y + offsetY >= -100 && player.y + offsetY <= (windowHeight + 100))) {
             const playerElement = document.createElement("div");
             playerElement.classList.add("player");
@@ -158,12 +148,23 @@ function render() {
             playerElement.style.transform = `rotate(${player.angle}deg)`;
 
             gameArea.appendChild(playerElement);
+
+            const playerName = document.createElement("div");
+            playerName.classList.add("player-name");
+            playerName.textContent = player.name || "Player"; // Display the player's name (you can set this when they join)
+            playerName.style.left = `${player.x}px`;
+            playerName.style.top = `${player.y + 30}px`; // Position it below the ship (adjust the value as needed)
+            playerName.style.position = "absolute"; // Ensure it's positioned relative to the game area
+            playerName.style.color = "white"; // Optional: style the text as needed
+            playerName.style.fontSize = "12px"; // Optional: adjust the font size
+
+            gameArea.appendChild(playerName); // Append the name element
         }
     });
 
     //Render asteroids
     asteroids.forEach((asteroid, index) => {
-        if(!asteroid) return;
+        if (!asteroid) return;
         if ((asteroid.x + offsetX >= -100 && asteroid.x + offsetX <= windowWidth + 100) && (asteroid.y + offsetY >= -100 && asteroid.y + offsetY <= windowHeight + 100)) {
             const asteroidElement = document.createElement("div");
             asteroidElement.classList.add("asteroid");
@@ -172,6 +173,7 @@ function render() {
             asteroidElement.style.width = asteroid.size + "px";
             asteroidElement.style.height = asteroid.size + "px";
 
+
             gameArea.appendChild(asteroidElement);
 
             //Handle collisions with player
@@ -179,7 +181,7 @@ function render() {
             const b = ship.y - (asteroid.y + (asteroid.size / 2));
             const distance = Math.sqrt((a ** 2) + (b ** 2));
 
-            if(distance < asteroid.size / 2){
+            if (distance < asteroid.size / 2) {
                 asteroid.health = 0;
                 ship.health = 0;
                 socket.emit("updatePlayer", socket.id, ship);
@@ -190,7 +192,7 @@ function render() {
 
     //Render bullets -- shot bullets
     bullets.forEach(bullet => {
-        if(!bullet) return;
+        if (!bullet) return;
         if ((bullet.x + offsetX >= -100 && bullet.x + offsetX <= windowWidth + 100) && (bullet.y + offsetY >= -100 && bullet.y + offsetY <= windowHeight + 100)) {
             const bulletElement = document.createElement("div");
             bulletElement.classList.add("bullet");
