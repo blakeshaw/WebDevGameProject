@@ -11,6 +11,8 @@ const io = new Server(server); // Initialize a new instance of socket.io by pass
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
+app.use(express.static(__dirname));
+
 // global variables
 let player = {};
 let asteroids = [];
