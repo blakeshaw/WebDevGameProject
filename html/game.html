@@ -31,6 +31,15 @@
         }
 
         /* Style for each player (simple placeholder for demonstration) */
+        .bullet {
+            width: 2px;
+            height: 2px;
+            background-color: white;
+            border-radius: 50%;
+            position: absolute;
+            border: 1px solid white;
+        }
+
         .player {
             position: absolute;
             width: 0;
@@ -73,8 +82,8 @@
         const game_area_y = 5000;
 
         let ship = {
-            x: 2500,
-            y: 2500,
+            x: Math.random() * 5000,
+            y: Math.random() * 5000,
             velocityX: 0,
             velocityY: 0,
             angle: 0,
@@ -83,6 +92,7 @@
         }
         let players = {};
         let asteroids = [];
+        let bullets = [];
         socket.on("players", (all_players) => {
             players = all_players;
             ship = all_players[socket.id];
@@ -90,27 +100,32 @@
         socket.on("asteroids", (all_asteroids) => {
             asteroids = all_asteroids;
         });
-        function makeAsteroids() {
-            for (let i = 0; i < 100; i++) {
-                asteroids.push({
-                    x: Math.random() * game_area_x,
-                    y: Math.random() * game_area_y,
-                    velocityX: (Math.random() - 0.5) * 1.5,
-                    velocityY: (Math.random() - 0.5) * 1.5,
-                    size: 50,
-                });
-            }
-        }
-        makeAsteroids();
+        socket.on("bullets", (all_bullets) => {
+            bullets = all_bullets;
+        });
 
-
+        let lastBulletTime = 0;
+        const bulletCooldown = 200;
         function controlPlayer() {
+            if(!ship) return;
+
             if (keys["ArrowLeft"]) ship.angle -= 1.5;
             if (keys["ArrowRight"]) ship.angle += 1.5;
             if (keys["ArrowUp"]) {
-                ship.velocityX += Math.sin(ship.angle * Math.PI / 180) * 0.01;
-                ship.velocityY += Math.cos(ship.angle * Math.PI / 180) * 0.01;
+                if(Math.abs(ship.velocityX) < 3) ship.velocityX += Math.sin(ship.angle * Math.PI / 180) * 0.01;
+                if(Math.abs(ship.velocityY) < 3) ship.velocityY += Math.cos(ship.angle * Math.PI / 180) * 0.01;
+            } else{
+                ship.velocityX *= 0.993;
+                ship.velocityY *= 0.993;
             }
+            const currentTime = Date.now();
+            if (keys[" "] && currentTime - lastBulletTime > bulletCooldown){
+                shot = true;
+                const bulletVelocityX = ship.velocityX + Math.sin(ship.angle * Math.PI / 180) * 10;
+                const bulletVelocityY = ship.velocityY - Math.cos(ship.angle * Math.PI / 180) * 10;
+                socket.emit("makeBullet", ship.x + 10, ship.y + 10, bulletVelocityX, bulletVelocityY);
+                lastBulletTime = currentTime;
+            } 
             //Move the ship
             ship.x += ship.velocityX;
             ship.y -= ship.velocityY;
@@ -134,21 +149,9 @@
 
             socket.emit("updatePlayer", socket.id, ship);
         }
-        function controlAsteroids() {
-            asteroids.forEach(asteroid => {
-                asteroid.x += asteroid.velocityX;
-                asteroid.y += asteroid.velocityY;
-
-                // Wrap asteroids around edges
-                if (asteroid.x < 0) asteroid.x = game_area_x;
-                if (asteroid.x > game_area_x) asteroid.x = 0;
-                if (asteroid.y < 0) asteroid.y = game_area_y;
-                if (asteroid.y > game_area_y) asteroid.y = 0;
-            });
-            socket.emit("updateAsteroids", asteroids);
-        }
 
         function render() {
+            if(!ship) return;
             //Clear previous render
             gameArea.innerHTML = "";
 
@@ -188,14 +191,21 @@
                 }
             });
 
-            //Render ammo -- ready to pick up on the ground
-
             //Render bullets -- shot bullets
+            bullets.forEach(bullet => {
+                const bulletElement = document.createElement("div");
+                bulletElement.classList.add("bullet");
+                bulletElement.style.left = bullet.x + "px";
+                bulletElement.style.top = bullet.y + "px";
+
+                if ((bullet.x + offsetX >= -100 && bullet.x + offsetX <= windowWidth + 100) && (bullet.y + offsetY >= -100 && bullet.y + offsetY <= windowHeight + 100)) {
+                    gameArea.appendChild(bulletElement);
+                }
+            })
         }
 
         function gameLoop() {
             controlPlayer();
-            controlAsteroids();
             render();
             requestAnimationFrame(gameLoop);
         }

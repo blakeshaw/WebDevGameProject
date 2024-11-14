@@ -14,6 +14,8 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 // global variables
 let player = {};
 let asteroids = [];
+let ammo = [];
+let bullets = [];
 
 let width = 5000;
 let height = 5000;
@@ -57,6 +59,15 @@ io.on('connection', (socket) => {
       asteroids = all_asteroids;
       socket.emit("asteroids", asteroids);
     });
+    socket.on("makeBullet", async(bx, by, bvelocityX, bvelocityY) => {
+      bullets.push({
+        x: bx,
+        y: by,
+        velocityX: bvelocityX,
+        velocityY: bvelocityY,
+        updatesLeft: 50,
+      });
+    });
 
     //Remove player from list of players when they disconnect.
     socket.on('disconnect', () => {
@@ -77,11 +88,49 @@ function makeAsteroids(){
         y: Math.random() * height,
         velocityX: (Math.random() - 0.5) * 1.5,
         velocityY: (Math.random() - 0.5) * 1.5,
-        size: 50,
+        size: 50 + (Math.random() * 50),
     });
   }
 }
 makeAsteroids();
+
+function updateAsteroids() {
+  asteroids.forEach(asteroid => {
+      asteroid.x += asteroid.velocityX;
+      asteroid.y += asteroid.velocityY;
+
+      // Wrap asteroids around the screen if they go off the edges
+      if (asteroid.x < 0) asteroid.x = 5000;
+      if (asteroid.x > 5000) asteroid.x = 0;
+      if (asteroid.y < 0) asteroid.y = 5000;
+      if (asteroid.y > 5000) asteroid.y = 0;
+  });
+  
+  // Emit updated asteroid positions to all connected clients
+  io.emit('asteroids', asteroids);
+}
+setInterval(updateAsteroids, 16);
+
+function updateBullets() {
+  bullets.forEach(bullet => {
+    bullet.x += bullet.velocityX;
+    bullet.y += bullet.velocityY;
+    
+    if(bullet.updatesLeft > 0){
+      bullet.updatesLeft -= 1;
+    }else{
+      const index = bullets.indexOf(bullet);
+      if(index > -1) bullets.splice(index, 1);
+    }
+  });
+  io.emit('bullets', bullets);
+}
+setInterval(updateBullets, 16);
+
+function updatePlayers(){
+  io.emit('players', player);
+}
+setInterval(updatePlayers, 16);
 
 // Start the server
 server.listen(3099, () => {
