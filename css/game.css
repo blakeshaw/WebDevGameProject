@@ -20,10 +20,9 @@ body {
     width: 5000px;
     height: 5000px;
     background-color: black;
-    border: 5px solid red;
+    border: 30px solid orange;
 }
 
-/* Style for each player (simple placeholder for demonstration) */
 .bullet {
     width: 2px;
     height: 2px;
@@ -31,6 +30,13 @@ body {
     border-radius: 50%;
     position: absolute;
     border: 1px solid white;
+}
+
+.ammo {
+    background-color: blue;
+    border-radius: 50%;
+    position: absolute;
+    border: 2px solid blue;
 }
 
 .player {
@@ -45,9 +51,8 @@ body {
 }
 
 .asteroid {
-    background-color: #ff6347;
+    background-color: red;
     border-radius: 50%;
     position: absolute;
-    border: 2px solid #ff6347;
-    /* Add a border to make the asteroids visible */
+    border: 2px solid red;
 }

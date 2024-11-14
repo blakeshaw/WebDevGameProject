@@ -21,6 +21,8 @@ let bullets = [];
 
 let width = 5000;
 let height = 5000;
+let asteroidMass = 0;
+let asteroidMassTarget = 15000;
 
 // define a route handler / that gets called when we hit website home
 app.get('/', (req, res) => {
@@ -39,6 +41,7 @@ io.on('connection', (socket) => {
 
     //When the client connects it sends the client ID which is used to make a new player.
     socket.on('client-id', async(id) => {
+      console.log(id);
       player[socket.id] = {
         x: Math.random() * width,
         y: Math.random() * height,
@@ -46,7 +49,10 @@ io.on('connection', (socket) => {
         velocityY: 0,
         angle: 0,
         health: 3,
-        score: 0
+        damage: 1,
+        score: 0,
+        ammo: 0,
+        boostLeft: 0,
       }
       socket.emit("players", player);
       //console.log(player[socket.id]);
@@ -61,13 +67,15 @@ io.on('connection', (socket) => {
       asteroids = all_asteroids;
       socket.emit("asteroids", asteroids);
     });
-    socket.on("makeBullet", async(bx, by, bvelocityX, bvelocityY) => {
+    socket.on("makeBullet", async(bx, by, bvelocityX, bvelocityY, bdamage, bid) => {
       bullets.push({
         x: bx,
         y: by,
         velocityX: bvelocityX,
         velocityY: bvelocityY,
         updatesLeft: 50,
+        damage: bdamage,
+        id: bid,
       });
     });
 
@@ -83,15 +91,32 @@ io.on('connection', (socket) => {
     });
 });
 
+function makeAmmo(){
+  while(ammo.length < 1000){
+    ammo.push({
+      x: Math.random() * width,
+      y: Math.random() * height,
+      amount: 1 + Math.round(Math.random() * 2),
+    });
+  }
+  io.emit("ammo", ammo);
+}
+setInterval(makeAmmo, 16);
+
 function makeAsteroids(){
-  for (let i = 0; i < 100; i++) {
+  while(asteroidMass < asteroidMassTarget){
+    const size = 25 + (Math.random() * 200)
+    const health = 1 + (Math.random() * (size / 20));
+    const speedMultiplier = 4 - ((size / 100) * 2);
     asteroids.push({
         x: Math.random() * width,
         y: Math.random() * height,
-        velocityX: (Math.random() - 0.5) * 1.5,
-        velocityY: (Math.random() - 0.5) * 1.5,
-        size: 50 + (Math.random() * 50),
+        velocityX: (Math.random() - 0.5) * speedMultiplier,
+        velocityY: (Math.random() - 0.5) * speedMultiplier,
+        size: size,
+        health: health,
     });
+    asteroidMass += size;
   }
 }
 makeAsteroids();
@@ -117,12 +142,71 @@ function updateBullets() {
   bullets.forEach(bullet => {
     bullet.x += bullet.velocityX;
     bullet.y += bullet.velocityY;
-    
+
+    //Handle bullet collisions with asteroids
+    asteroids.forEach((asteroid, asteroidIndex) => {
+      const a = bullet.x - (asteroid.x + (asteroid.size / 2));
+      const b = bullet.y - (asteroid.y + (asteroid.size / 2));
+      const distance = Math.sqrt((a ** 2) + (b ** 2));
+
+      if(distance < asteroid.size / 2){
+        asteroid.health -= bullet.damage;
+        bullet.updatesLeft = 0;
+
+        //Increase player score for killing an asteroid
+        if(asteroid.health <= 0){
+          console.log(player[bullet.id]);
+          player[bullet.id].score += Math.round(asteroid.size / 2);
+        }
+
+        if(asteroid.health <= 0 && asteroid.size <= 50){
+          //Make it drop things
+          ammo.push({
+            x: asteroid.x + (asteroid.size / 2),
+            y: asteroid.y + (asteroid.size / 2),
+            amount: 10 + Math.round(Math.random() * 10),
+          });
+          //Delete the asteroid
+          asteroidMass -= asteroid.size;
+          asteroids.splice(asteroidIndex, 1);
+          if(asteroidMass < asteroidMassTarget){
+            makeAsteroids();
+          }
+        }else if(asteroid.health <= 0){
+          //Split the asteroid if it is bigger than 50
+          const numSplits = 1 + Math.round(Math.random() * 2);
+          let sizeLeft = asteroid.size;
+          let healthLeft = Math.random() * (asteroid.size / 20);
+          for(let i = 0; i < numSplits; i ++){
+            let newSize = 25 + (Math.random() * sizeLeft / 2);
+            let newHealth = Math.max(1, (newSize / sizeLeft) * healthLeft);
+            const speedMultiplier = 4 - ((newSize / 100) * 2);
+            asteroids.push({
+              x: asteroid.x,
+              y: asteroid.y,
+              velocityX: (Math.random() - 0.5) * speedMultiplier,
+              velocityY: (Math.random() - 0.5) * speedMultiplier,
+              size: newSize,
+              health: newHealth,
+            });
+            sizeLeft -= newSize * 0.5;
+            healthLeft -= newHealth;
+            asteroidMass += newSize;
+          }
+          asteroidMass -= asteroid.size;
+          asteroids.splice(asteroidIndex, 1);
+        }
+      }
+    });
+    //TODO: Handle bullet collisions with other players
+
+    //Update the bullets or remove the bullets if they expired.
     if(bullet.updatesLeft > 0){
       bullet.updatesLeft -= 1;
     }else{
       const index = bullets.indexOf(bullet);
       if(index > -1) bullets.splice(index, 1);
+      return;
     }
   });
   io.emit('bullets', bullets);
