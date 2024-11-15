@@ -36,66 +36,66 @@ app.get('/game', (req, res) => {
 
 // Then listen on the connection event for incoming sockets and log it to the console
 io.on('connection', (socket) => {
-    console.log("user " + socket.id + " connected")
+  console.log("user " + socket.id + " connected")
 
-    //When the client connects it sends the client ID which is used to make a new player.
-    socket.on('client-id', async(id) => {
-      players[socket.id] = {
-        name: id,
-        x: Math.random() * width,
-        y: Math.random() * height,
-        velocityX: 0,
-        velocityY: 0,
-        angle: 0,
-        health: 3,
-        damage: 1,
-        score: 0,
-        ammo: 0,
-        boostLeft: 0,
-      }
-      try{
-        delete players[null];
-      }catch(error){}
-    });
+  //When the client connects it sends the client ID which is used to make a new player.
+  socket.on('client-id', async (id) => {
+    players[socket.id] = {
+      name: id,
+      x: Math.random() * width,
+      y: Math.random() * height,
+      velocityX: 0,
+      velocityY: 0,
+      angle: 0,
+      health: 3,
+      damage: 1,
+      score: 0,
+      ammo: 0,
+      boostLeft: 0,
+    }
+    try {
+      delete players[null];
+    } catch (error) { }
+  });
 
-    //When the user wants to update their player on the server it sends updatePlayer
-    socket.on("updatePlayer", async(id, ship) => {
-      players[id] = ship
+  //When the user wants to update their player on the server it sends updatePlayer
+  socket.on("updatePlayer", async (id, ship) => {
+    players[id] = ship
+  });
+  socket.on("updateAsteroid", async (asteroid, index) => {
+    asteroids[index] = asteroid;
+  });
+  socket.on("updateAmmo", async (piece, index) => {
+    ammo[index] = piece;
+  });
+  socket.on("removeAmmo", async (index) => {
+    ammo.splice(index, 1);
+  });
+  socket.on("makeBullet", async (bx, by, bvelocityX, bvelocityY, bdamage, bid) => {
+    bullets.push({
+      x: bx,
+      y: by,
+      velocityX: bvelocityX,
+      velocityY: bvelocityY,
+      updatesLeft: 50,
+      damage: bdamage,
+      id: bid,
     });
-    socket.on("updateAsteroid", async(asteroid, index) =>{
-      asteroids[index] = asteroid;
-    });
-    socket.on("updateAmmo", async(piece, index) => {
-      ammo[index] = piece;
-    });
-    socket.on("removeAmmo", async(index) =>{
-      ammo.splice(index, 1);
-    });
-    socket.on("makeBullet", async(bx, by, bvelocityX, bvelocityY, bdamage, bid) => {
-      bullets.push({
-        x: bx,
-        y: by,
-        velocityX: bvelocityX,
-        velocityY: bvelocityY,
-        updatesLeft: 50,
-        damage: bdamage,
-        id: bid,
-      });
-    });
+  });
 
-    //Remove player from list of players when they disconnect.
-    socket.on('disconnect', () => {
-        console.log("user " + socket.id + " disconnected");
-        try{
-          delete players[socket.id];
-        } catch (error) {
-          // Ignoring the start screen players
-        }
-    });
+  //Remove player from list of players when they disconnect.
+  socket.on('disconnect', () => {
+    console.log("user " + socket.id + " disconnected");
+    try {
+      delete players[socket.id];
+    } catch (error) {
+      // Ignoring the start screen players
+    }
+  });
 });
 
-function makeAmmo(){
-  while(ammo.length < 1000){
+function makeAmmo() {
+  while (ammo.length < 1000) {
     ammo.push({
       x: Math.random() * width,
       y: Math.random() * height,
@@ -106,18 +106,18 @@ function makeAmmo(){
 }
 setInterval(makeAmmo, 512);
 
-function makeAsteroids(){
-  while(asteroidMass < asteroidMassTarget){
+function makeAsteroids() {
+  while (asteroidMass < asteroidMassTarget) {
     const size = 25 + (Math.random() * 200)
     const health = 1 + (Math.random() * (size / 20));
-    const speedMultiplier = 4 - ((size / 100) * 2);
+    const speedMultiplier = 4 - ((size / 100) * 3);
     asteroids.push({
-        x: Math.random() * width,
-        y: Math.random() * height,
-        velocityX: (Math.random() - 0.5) * speedMultiplier,
-        velocityY: (Math.random() - 0.5) * speedMultiplier,
-        size: size,
-        health: health,
+      x: Math.random() * width,
+      y: Math.random() * height,
+      velocityX: (Math.random() - 0.5) * speedMultiplier,
+      velocityY: (Math.random() - 0.5) * speedMultiplier,
+      size: size,
+      health: health,
     });
     asteroidMass += size;
   }
@@ -126,55 +126,103 @@ makeAsteroids();
 
 function updateAsteroids() {
   asteroids.forEach((asteroid, asteroidIndex) => {
-      asteroid.x += asteroid.velocityX;
-      asteroid.y += asteroid.velocityY;
+    asteroid.x += asteroid.velocityX;
+    asteroid.y += asteroid.velocityY;
 
-      // Wrap asteroids around the screen if they go off the edges
-      if (asteroid.x < 0) asteroid.x = 5000;
-      if (asteroid.x > 5000) asteroid.x = 0;
-      if (asteroid.y < 0) asteroid.y = 5000;
-      if (asteroid.y > 5000) asteroid.y = 0;
+    // Wrap asteroids around the screen if they go off the edges
+    if (asteroid.x < 0) asteroid.x = 5000;
+    if (asteroid.x > 5000) asteroid.x = 0;
+    if (asteroid.y < 0) asteroid.y = 5000;
+    if (asteroid.y > 5000) asteroid.y = 0;
 
-      //Handle an asteroid dying.
-      if(asteroid.health <= 0 && asteroid.size <= 50){
-        //Make it drop things
-        ammo.push({
-          x: asteroid.x + (asteroid.size / 2),
-          y: asteroid.y + (asteroid.size / 2),
-          amount: 10 + Math.round(Math.random() * 10),
-        });
-        //Delete the asteroid
-        asteroidMass -= asteroid.size;
-        asteroids.splice(asteroidIndex, 1);
-        if(asteroidMass < asteroidMassTarget){
-          makeAsteroids();
-        }
-      }else if(asteroid.health <= 0){
-        //Split the asteroid if it is bigger than 50
-        const numSplits = 1 + Math.round(Math.random() * 2);
-        let sizeLeft = asteroid.size;
-        let healthLeft = Math.random() * (asteroid.size / 20);
-        for(let i = 0; i < numSplits; i ++){
-          let newSize = 25 + (Math.random() * sizeLeft / 2);
-          let newHealth = Math.max(1, (newSize / sizeLeft) * healthLeft);
-          const speedMultiplier = 4 - ((newSize / 100) * 2);
-          asteroids.push({
-            x: asteroid.x,
-            y: asteroid.y,
-            velocityX: (Math.random() - 0.5) * speedMultiplier,
-            velocityY: (Math.random() - 0.5) * speedMultiplier,
-            size: newSize,
-            health: newHealth,
-          });
-          sizeLeft -= newSize * 0.5;
-          healthLeft -= newHealth;
-          asteroidMass += newSize;
-        }
-        asteroidMass -= asteroid.size;
-        asteroids.splice(asteroidIndex, 1);
+    // Check collisions with other asteroids
+    for (let otherIndex = asteroidIndex + 1; otherIndex < asteroids.length; otherIndex++) {
+      const other = asteroids[otherIndex];
+      const a = (other.x + (other.size / 2)) - (asteroid.x + (asteroid.size / 2));
+      const b = (other.y + (other.size / 2)) - (asteroid.y + (asteroid.size / 2));
+      const distance = Math.sqrt((a ** 2) + (b ** 2));
+
+      // Check if the asteroids are colliding
+      if (distance < (asteroid.size / 2) + (other.size / 2)) {
+        const normalX = a / distance; // Normal vector (x-component)
+        const normalY = b / distance; // Normal vector (y-component)
+
+        // Tangent vector is perpendicular to the normal
+        const tangentX = -normalY;
+        const tangentY = normalX;
+
+        // Project velocities onto the normal and tangent vectors
+        // Calculate masses
+        const mass1 = asteroid.size;
+        const mass2 = other.size;
+
+        // Project velocities onto the normal and tangent vectors
+        const dotProductNormal1 = asteroid.velocityX * normalX + asteroid.velocityY * normalY;
+        const dotProductNormal2 = other.velocityX * normalX + other.velocityY * normalY;
+
+        const dotProductTangent1 = asteroid.velocityX * tangentX + asteroid.velocityY * tangentY;
+        const dotProductTangent2 = other.velocityX * tangentX + other.velocityY * tangentY;
+
+        // Use conservation of momentum to calculate new normal velocities
+        const newDotProductNormal1 = (dotProductNormal1 * (mass1 - mass2) + 2 * mass2 * dotProductNormal2) / (mass1 + mass2);
+        const newDotProductNormal2 = (dotProductNormal2 * (mass2 - mass1) + 2 * mass1 * dotProductNormal1) / (mass1 + mass2);
+
+        // Update velocities
+        asteroid.velocityX = tangentX * dotProductTangent1 + normalX * newDotProductNormal1;
+        asteroid.velocityY = tangentY * dotProductTangent1 + normalY * newDotProductNormal1;
+
+        other.velocityX = tangentX * dotProductTangent2 + normalX * newDotProductNormal2;
+        other.velocityY = tangentY * dotProductTangent2 + normalY * newDotProductNormal2;
+
+        // Slightly separate the asteroids to avoid overlap
+        const overlap = ((asteroid.size / 2) + (other.size / 2)) - distance;
+        asteroid.x -= normalX * overlap / 2;
+        asteroid.y -= normalY * overlap / 2;
+        other.x += normalX * overlap / 2;
+        other.y += normalY * overlap / 2;
       }
+    }
+
+    //Handle an asteroid dying.
+    if (asteroid.health <= 0 && asteroid.size <= 50) {
+      //Make it drop things
+      ammo.push({
+        x: asteroid.x + (asteroid.size / 2),
+        y: asteroid.y + (asteroid.size / 2),
+        amount: 10 + Math.round(Math.random() * 10),
+      });
+      //Delete the asteroid
+      asteroidMass -= asteroid.size;
+      asteroids.splice(asteroidIndex, 1);
+      if (asteroidMass < asteroidMassTarget) {
+        makeAsteroids();
+      }
+    } else if (asteroid.health <= 0) {
+      //Split the asteroid if it is bigger than 50
+      const numSplits = 1 + Math.round(Math.random() * 2);
+      let sizeLeft = asteroid.size;
+      let healthLeft = Math.random() * (asteroid.size / 20);
+      for (let i = 0; i < numSplits; i++) {
+        let newSize = 25 + (Math.random() * sizeLeft / 2);
+        let newHealth = Math.max(1, (newSize / sizeLeft) * healthLeft);
+        const speedMultiplier = 4 - ((newSize / 100) * 2);
+        asteroids.push({
+          x: asteroid.x,
+          y: asteroid.y,
+          velocityX: (Math.random() - 0.5) * speedMultiplier,
+          velocityY: (Math.random() - 0.5) * speedMultiplier,
+          size: newSize,
+          health: newHealth,
+        });
+        sizeLeft -= newSize * 0.5;
+        healthLeft -= newHealth;
+        asteroidMass += newSize;
+      }
+      asteroidMass -= asteroid.size;
+      asteroids.splice(asteroidIndex, 1);
+    }
   });
-  
+
   // Emit updated asteroid positions to all connected clients
   io.emit('asteroids', asteroids);
 }
@@ -191,12 +239,12 @@ function updateBullets() {
       const b = bullet.y - (asteroid.y + (asteroid.size / 2));
       const distance = Math.sqrt((a ** 2) + (b ** 2));
 
-      if(distance < asteroid.size / 2){
+      if (distance < asteroid.size / 2) {
         asteroid.health -= bullet.damage;
         bullet.updatesLeft = 0;
 
         //Increase player score for killing an asteroid
-        if(asteroid.health <= 0){
+        if (asteroid.health <= 0) {
           players[bullet.id].score += Math.round(asteroid.size / 2);
         }
       }
@@ -207,17 +255,17 @@ function updateBullets() {
       const b = bullet.y - (player.y + 10);
       const distance = Math.sqrt((a ** 2) + (b ** 2));
 
-      if(distance < 20){
+      if (distance < 20) {
         player.health -= bullet.damage;
       }
     });
 
     //Update the bullets or remove the bullets if they expired.
-    if(bullet.updatesLeft > 0){
+    if (bullet.updatesLeft > 0) {
       bullet.updatesLeft -= 1;
-    }else{
+    } else {
       const index = bullets.indexOf(bullet);
-      if(index > -1) bullets.splice(index, 1);
+      if (index > -1) bullets.splice(index, 1);
       return;
     }
   });
@@ -225,12 +273,12 @@ function updateBullets() {
 }
 setInterval(updateBullets, 16);
 
-function updatePlayers(){
+function updatePlayers() {
   io.emit('players', players);
 }
 setInterval(updatePlayers, 32);
 
 // Start the server
 server.listen(3099, () => {
-  console.log('server running at http://localhost:3099');
+  console.log('server running at http://localhost:3130');
 });
