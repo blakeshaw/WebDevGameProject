@@ -279,6 +279,6 @@ function updatePlayers() {
 setInterval(updatePlayers, 32);
 
 // Start the server
-server.listen(3099, () => {
+server.listen(3130, () => {
   console.log('server running at http://localhost:3130');
 });
