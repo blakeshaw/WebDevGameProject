@@ -41,6 +41,13 @@ body {
     border: 2px solid blue;
 }
 
+.health {
+    background-color: green;
+    border-radius: 50%;
+    position: absolute;
+    border: 5px solid green;
+}
+
 .player {
     position: absolute;
     width: 0;

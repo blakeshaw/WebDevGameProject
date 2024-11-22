@@ -3,7 +3,7 @@
 
 <head>
     <meta name="viewport" content="width=device-width,initial-scale=1.0">
-    <title>IO Game</title>
+    <title>ASTEROIDS</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Starship.io</title>
@@ -49,6 +49,41 @@
 
         .instructions p {
             margin-bottom: 10px;
+        }
+        #player-name, #start-button {
+            display: block;
+            margin: 10px auto;
+        }
+
+        #player-name {
+            font-size: 1.2em;
+            padding: 10px;
+            width: 80%;
+            max-width: 300px;
+            margin: 20px auto 10px auto;
+            /* Adds spacing above and below */
+            border: 2px solid #FFD700;
+            /* Gold border */
+            border-radius: 8px;
+            background-color: #000;
+            /* Black background */
+            color: #FFF;
+            /* White text */
+            text-align: center;
+            box-shadow: 0 0 10px #FF4500;
+            /* Glow effect */
+            outline: none;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        #player-name:focus {
+            border-color: #FF4500;
+            box-shadow: 0 0 15px #FFD700;
+        }
+
+        #player-name::placeholder {
+            color: #888;
+            font-style: italic;
         }
 
         #start-button {
@@ -99,14 +134,17 @@
         <div class="instructions">
             <p>Welcome to the Starship.io!</p>
             <p>Navigate your ship, avoid asteroids, and survive as long as you can.</p>
+            <p>Watch out for other ships that want to take your ammo!</p>
             <p>Controls:</p>
             <ul>
-                <p>WASD Keys to Move</p>
+                <p>WASD/Arrow Keys to Move</p>
                 <p>Spacebar to Shoot</p>
             </ul>
         </div>
-        <input type="text" id="player-name" placeholder="Enter your name">
-        <button id="start-button">Start Game</button>
+        <div>
+            <input type="text" id="player-name" placeholder="Player Name">
+            <button id="start-button">Start Game</button>
+        </div>
     </div>
 
     <!-- load the socket.io-client -->
@@ -116,8 +154,13 @@
 
         const startButton = document.getElementById('start-button');
         const playerNameInput = document.getElementById("player-name");
-        startButton.addEventListener('click', () => {
+        let prevName = localStorage.getItem("player-name");
+        if (prevName) {
+            playerNameInput.value = prevName;
+        }
 
+        startButton.addEventListener('click', () => {
+            localStorage.setItem("player-name", playerNameInput.value.trim());
             window.location.href = '/game';
         });
 

@@ -1,5 +1,4 @@
 const socket = io();
-socket.emit('client-id', socket.id);
 
 let keys = {}; //keep track of which keys are pressed
 document.addEventListener("keydown", e => keys[e.key] = true);
@@ -9,18 +8,39 @@ const gameArea = document.getElementById("game-area");
 const game_area_x = 5000;
 const game_area_y = 5000;
 
-let ship = {}
+let ship = {
+    name: localStorage.getItem("player-name"),
+    id: null,
+    x: Math.random() * game_area_x,
+    y: Math.random() * game_area_y,
+    velocityX: 0,
+    velocityY: 0,
+    angle: 0,
+    health: 3,
+    damage: 1,
+    score: 0,
+    ammo: 0,
+    boostLeft: 0,
+}
+socket.emit('newClient', ship);
+socket.on("updateID", socket_id => {
+    if(!ship) return;
+    ship.id = socket_id;
+});
 let players = {};
 let asteroids = [];
 let bullets = [];
-let ammo = [];
+let collectables = [];
+let leaderboard = {};
+let sortedLeaderboard = [];
 socket.on("players", (all_players) => {
     players = all_players;
     ship = all_players[socket.id];
+    if(!ship) return;
 
     if (ship.health <= 0) {
         window.location.href = '/';
-        socket.emit("makeAmmo", ship.x, ship.y, ship.ammo);
+        socket.emit("makeCollectables", ship.x, ship.y, ship.ammo);
     }
 });
 socket.on("asteroids", (all_asteroids) => {
@@ -29,14 +49,18 @@ socket.on("asteroids", (all_asteroids) => {
 socket.on("bullets", (all_bullets) => {
     bullets = all_bullets;
 });
-socket.on("ammo", (all_ammo) => {
-    ammo = all_ammo;
+socket.on("collectables", (all_collectables) => {
+    collectables = all_collectables;
 });
 
 let lastBulletTime = 0;
 const bulletCooldown = 200;
 function controlPlayer() {
     if (!ship) return;
+    if (!ship.id){
+        socket.emit("newClient", ship);
+        return;
+    }
 
     if (keys["ArrowLeft"] || keys["a"]) ship.angle -= 1.5;
     if (keys["ArrowRight"] || keys["d"]) ship.angle += 1.5;
@@ -53,8 +77,8 @@ function controlPlayer() {
     const currentTime = Date.now();
     if (keys[" "] && currentTime - lastBulletTime > bulletCooldown && ship.ammo > 0) {
         shot = true;
-        const bulletVelocityX = ship.velocityX + Math.sin(ship.angle * Math.PI / 180) * 10;
-        const bulletVelocityY = ship.velocityY - Math.cos(ship.angle * Math.PI / 180) * 10;
+        const bulletVelocityX = ship.velocityX + Math.sin(ship.angle * Math.PI / 180) * 15;
+        const bulletVelocityY = ship.velocityY - Math.cos(ship.angle * Math.PI / 180) * 15;
         socket.emit("makeBullet", ship.x + 10, ship.y + 10, bulletVelocityX, bulletVelocityY, ship.damage, socket.id);
         lastBulletTime = currentTime;
         ship.ammo -= 1;
@@ -88,6 +112,21 @@ function updateHUD() {
     document.getElementById("health").textContent = `Health: ${ship.health}`;
     document.getElementById("score").textContent = `Score: ${ship.score}`;
     document.getElementById("ammo").textContent = `Ammo: ${ship.ammo}`;
+
+    Object.values(players).forEach(player => {
+        if(leaderboard.length < 5){
+            if(!leaderboard[player.id]){
+                leaderboard[player.id] = player.score;
+            }
+            var keys = Object.keys(leaderboard);
+
+
+            for(let i = 0; i < keys.length; i++){
+                if(leaderboard[player.id]){}
+            }
+        }
+
+    });
 }
 
 function render() {
@@ -104,18 +143,18 @@ function render() {
     gameArea.style.left = offsetX + "px";
     gameArea.style.top = offsetY + "px"
 
-    //Render ammo -- unshot bullets
-    ammo.forEach((piece, index) => {
+    //Render collectables -- unshot bullets
+    collectables.forEach((piece, index) => {
         if (!piece) return;
         if ((piece.x + offsetX >= -100 && piece.x + offsetX <= windowWidth + 100) && (piece.y + offsetY >= -100 && piece.y + offsetY <= windowHeight + 100)) {
-            const ammoElement = document.createElement("div");
-            ammoElement.classList.add("ammo");
-            ammoElement.style.left = piece.x + "px";
-            ammoElement.style.top = piece.y + "px";
-            ammoElement.style.width = piece.amount + "px";
-            ammoElement.style.height = piece.amount + "px";
+            const collectableElement = document.createElement("div");
+            collectableElement.classList.add(piece.type);
+            collectableElement.style.left = piece.x + "px";
+            collectableElement.style.top = piece.y + "px";
+            collectableElement.style.width = piece.amount + "px";
+            collectableElement.style.height = piece.amount + "px";
 
-            gameArea.appendChild(ammoElement);
+            gameArea.appendChild(collectableElement);
 
             //Handle colisions with player (in a dope af way)
             const a = ship.x - (piece.x + (piece.amount / 2));
@@ -125,13 +164,18 @@ function render() {
             if (distance < 50) {
                 piece.x += (ship.x - piece.x) * 0.2;
                 piece.y += (ship.y - piece.y) * 0.2;
-                socket.emit("updateAmmo", piece, index);
+                socket.emit("updateCollectables", piece, index);
                 if (distance < 10) {
-                    ship.ammo += piece.amount;
-                    ship.score += piece.amount;
-                    ammo.splice(index, 1);
+                    if(piece.type == "ammo"){
+                        ship.ammo += piece.amount;
+                        ship.score += piece.amount;
+                    }else if(piece.type == "health"){
+                        ship.health += piece.amount;
+                    }
+
+                    collectables.splice(index, 1);
                     socket.emit("updatePlayer", socket.id, ship);
-                    socket.emit("removeAmmo", index);
+                    socket.emit("removeCollectable", index);
                 }
             }
         }
@@ -151,7 +195,7 @@ function render() {
 
             const playerName = document.createElement("div");
             playerName.classList.add("player-name");
-            playerName.textContent = player.name || "Player"; // Display the player's name (you can set this when they join)
+            playerName.textContent = player.name; // Display the player's name (you can set this when they join)
             playerName.style.left = `${player.x}px`;
             playerName.style.top = `${player.y + 30}px`; // Position it below the ship (adjust the value as needed)
             playerName.style.position = "absolute"; // Ensure it's positioned relative to the game area
@@ -181,9 +225,36 @@ function render() {
             const b = ship.y - (asteroid.y + (asteroid.size / 2));
             const distance = Math.sqrt((a ** 2) + (b ** 2));
 
-            if (distance < asteroid.size / 2) {
-                asteroid.health = 0;
-                ship.health = 0;
+            if (distance < asteroid.size / 2 && asteroid.collisionUpdatesCooldownLeft == 0) { //TODO make ship collision look right here
+                const normalX = a / distance; // Normal vector (x-component)
+                const normalY = b / distance; // Normal vector (y-component)
+                const tangentX = -normalY;
+                const tangentY = normalX;
+                const mass1 = asteroid.size;
+                const mass2 = 100;
+                // Project velocities onto the normal and tangent vectors
+                const dotProductNormal1 = asteroid.velocityX * normalX + asteroid.velocityY * normalY;
+                const dotProductNormal2 = ship.velocityX * normalX + ship.velocityY * normalY;
+                const dotProductTangent1 = asteroid.velocityX * tangentX + asteroid.velocityY * tangentY;
+                const dotProductTangent2 = ship.velocityX * tangentX + ship.velocityY * tangentY;
+                // Use conservation of momentum to calculate new normal velocities
+                const newDotProductNormal1 = (dotProductNormal1 * (mass1 - mass2) + 2 * mass2 * dotProductNormal2) / (mass1 + mass2);
+                const newDotProductNormal2 = (dotProductNormal2 * (mass2 - mass1) + 2 * mass1 * dotProductNormal1) / (mass1 + mass2);
+                // Update velocities
+                asteroid.velocityX = tangentX * dotProductTangent1 + normalX * newDotProductNormal1;
+                asteroid.velocityY = tangentY * dotProductTangent1 + normalY * newDotProductNormal1;
+                ship.velocityX = tangentX * dotProductTangent2 + normalX * newDotProductNormal2;
+                ship.velocityY = tangentY * dotProductTangent2 + normalY * newDotProductNormal2;
+                // Slightly separate the asteroids to avoid overlap
+                const overlap = (asteroid.size / 2) - distance;
+                asteroid.x -= normalX * overlap / 2;
+                asteroid.y -= normalY * overlap / 2;
+                ship.x += normalX * overlap / 2;
+                ship.y += normalY * overlap / 2;
+
+                asteroid.health -= 0;
+                ship.health -= 0; //TODO
+
                 socket.emit("updatePlayer", socket.id, ship);
                 socket.emit("updateAsteroid", asteroid, index);
             }
