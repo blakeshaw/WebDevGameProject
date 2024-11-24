@@ -52,7 +52,7 @@ body {
     position: absolute;
     width: 0;
     height: 0;
-    border-width: 0 10px 20px 10px;
+    /*border-width: 0 10px 20px 10px;*/
     border-style: solid;
     background-color: transparent;
     border-color: transparent transparent #76c7c0 transparent;
@@ -79,4 +79,18 @@ body {
     font-size: 16px;
     display: flex;
     gap: 20px;
+}
+
+#leaderboard {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: rgba(0, 0, 0, 0.7); /* Semi-transparent black background */
+    color: gold;
+    padding: 10px 20px;
+    border-radius: 5px;
+    font-family: Arial, sans-serif;
+    font-size: 16px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.5); /* Subtle shadow for depth */
+    max-width: 20%;
 }

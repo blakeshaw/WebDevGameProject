@@ -19,6 +19,7 @@
         body,
         html {
             height: 100%;
+            width: 100%;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -103,8 +104,6 @@
         }
 
         .asteroid {
-            width: 40px;
-            height: 40px;
             background-color: #ff6347;
             border-radius: 50%;
             position: absolute;
@@ -175,6 +174,7 @@
                     y: Math.random() * window.innerHeight,
                     velocityX: (Math.random() - 0.5) * 2,
                     velocityY: (Math.random() - 0.5) * 2,
+                    size: 25 + Math.random() * 100,
                 });
             }
         }
@@ -201,6 +201,8 @@
                 asteroidElement.classList.add("asteroid");
                 asteroidElement.style.left = asteroid.x + "px";
                 asteroidElement.style.top = asteroid.y + "px";
+                asteroidElement.style.width = asteroid.size + "px";
+                asteroidElement.style.height = asteroid.size + "px";
                 gameArea.appendChild(asteroidElement);
             });
         }

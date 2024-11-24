@@ -23,7 +23,7 @@ let bullets = [];
 let width = 5000;
 let height = 5000;
 let asteroidMass = 0;
-let asteroidMassTarget = 15000;
+let asteroidMassTarget = 10000;
 
 // define a route handler / that gets called when we hit website home
 app.get('/', (req, res) => {
@@ -84,11 +84,11 @@ io.on('connection', (socket) => {
 });
 
 function makeCollectables() {
-  while (collectables.length < 500) {
+  while (collectables.length < 300) {
     const type = Math.round(Math.random() * 10);
 
     let collectableType = collectableTypes[0];
-    if(type == 0) collectableType = collectableTypes[1];
+    if (type == 0) collectableType = collectableTypes[1];
 
     collectables.push({
       x: Math.random() * width,
@@ -97,13 +97,17 @@ function makeCollectables() {
       type: collectableType,
     });
   }
+  while (collectables.length > 350) {
+    const toDelete = Math.round(Math.random() * collectables.length);
+    collectables.splice(toDelete, 1);
+  }
   io.emit("collectables", collectables);
 }
-setInterval(makeCollectables, 512);
+setInterval(makeCollectables, 128);
 
 function makeAsteroids() {
-  while (asteroidMass < asteroidMassTarget) {
-    const size = 25 + (Math.random() * 200)
+  while (asteroidMass < asteroidMassTarget && asteroids.length < 150) {
+    const size = 25 + (Math.random() * 150)
     const health = 1 + (Math.random() * (size / 20));
     const speedMultiplier = 4 - ((size / 50) * 2);
     asteroids.push({
@@ -113,6 +117,8 @@ function makeAsteroids() {
       velocityY: (Math.random() - 0.5) * speedMultiplier,
       size: size,
       health: health,
+      angle: Math.random() * 360,
+      angleVelocity: (Math.random() - 0.5),
       collisionUpdatesCooldownLeft: 0,
     });
     asteroidMass += size;
@@ -124,17 +130,20 @@ function updateAsteroids() {
   asteroids.forEach((asteroid, asteroidIndex) => {
     asteroid.x += asteroid.velocityX;
     asteroid.y += asteroid.velocityY;
-    if(asteroid.collisionUpdatesCooldownLeft > 0) asteroid.collisionUpdatesCooldownLeft -= 1;
+    asteroid.angle += asteroid.angleVelocity;
+
+    if (asteroid.collisionUpdatesCooldownLeft > 0) asteroid.collisionUpdatesCooldownLeft -= 1;
 
     // Wrap asteroids around the screen if they go off the edges
-    if (asteroid.x < 0) asteroid.x = 5000;
-    if (asteroid.x > 5000) asteroid.x = 0;
-    if (asteroid.y < 0) asteroid.y = 5000;
-    if (asteroid.y > 5000) asteroid.y = 0;
+    if (asteroid.x < 0 - asteroid.size) asteroid.x = 5000 + asteroid.size;
+    if (asteroid.x > 5000 + asteroid.size) asteroid.x = 0 - asteroid.size;
+    if (asteroid.y < 0 - asteroid.size) asteroid.y = 5000 + asteroid.size;
+    if (asteroid.y > 5000 + asteroid.size) asteroid.y = 0 - asteroid.size;
 
     // Check collisions with other asteroids
     for (let otherIndex = asteroidIndex + 1; otherIndex < asteroids.length; otherIndex++) {
       const other = asteroids[otherIndex];
+      if(!other) return;
       const a = (other.x + (other.size / 2)) - (asteroid.x + (asteroid.size / 2));
       const b = (other.y + (other.size / 2)) - (asteroid.y + (asteroid.size / 2));
       const distance = Math.sqrt((a ** 2) + (b ** 2));
@@ -177,11 +186,15 @@ function updateAsteroids() {
     //Handle an asteroid dying.
     if (asteroid.health <= 0 && asteroid.size <= 50) {
       //Make it drop things
+      const type = Math.round(Math.random() * 10);
+      let collectableType = collectableTypes[0];
+      if (type == 0) collectableType = collectableTypes[1];
+
       collectables.push({
-        x: asteroid.x + (asteroid.size / 2),
-        y: asteroid.y + (asteroid.size / 2),
-        amount: 10 + Math.round(Math.random() * 10),
-        type: "ammo",
+        x: Math.random() * width,
+        y: Math.random() * height,
+        amount: 5 + Math.round(Math.random() * 2),
+        type: collectableType,
       });
       //Delete the asteroid
       asteroidMass -= asteroid.size;
@@ -199,13 +212,15 @@ function updateAsteroids() {
         let newHealth = Math.max(1, (newSize / sizeLeft) * healthLeft);
         const speedMultiplier = 4 - ((newSize / 100) * 2);
         asteroids.push({
-          x: asteroid.x,
-          y: asteroid.y,
+          x: asteroid.x + ((Math.random() - 0.5) * asteroid.size / 2),
+          y: asteroid.y + ((Math.random() - 0.5) * asteroid.size / 2),
           velocityX: 1 + (Math.random() - 0.5) * speedMultiplier,
           velocityY: 1 + (Math.random() - 0.5) * speedMultiplier,
           size: newSize,
           health: newHealth,
-          collisionUpdatesCooldownLeft: 30,
+          angle: Math.random() * 360,
+          angleVelocity: (Math.random() - 0.5),
+          collisionUpdatesCooldownLeft: 20,
         });
         sizeLeft -= newSize * 0.5;
         healthLeft -= newHealth;
@@ -219,7 +234,7 @@ function updateAsteroids() {
   // Emit updated asteroid positions to all connected clients
   io.emit('asteroids', asteroids);
 }
-setInterval(updateAsteroids, 64);
+setInterval(updateAsteroids, 32);
 
 function updateBullets() {
   bullets.forEach(bullet => {
@@ -232,23 +247,42 @@ function updateBullets() {
       const b = bullet.y - (asteroid.y + (asteroid.size / 2));
       const distance = Math.sqrt((a ** 2) + (b ** 2));
 
+      if (distance > 0) { // Avoid division by zero
+        const gravityStrength = asteroid.size * 100; // Adjust this constant to control gravity strength
+        const gravitationalPull = gravityStrength / (distance ** 2); // Gravity decreases with the square of the distance
+
+        // Update bullet velocity
+        bullet.velocityX -= (a / distance) * gravitationalPull;
+        bullet.velocityY -= (b / distance) * gravitationalPull;
+      }
+
       if (distance < asteroid.size / 2) {
         asteroid.health -= bullet.damage;
         bullet.updatesLeft = 0;
 
         //Increase player score for killing an asteroid
         if (asteroid.health <= 0) {
+          if(!players[bullet.id]) return;
           players[bullet.id].score += Math.round(asteroid.size / 2);
         }
       }
     });
     //Handle bullet collisions with players
     Object.values(players).forEach(player => {
-      const a = bullet.x - (player.x + 10);
-      const b = bullet.y - (player.y + 10);
+      const a = bullet.x - (player.x + (player.size / 2));
+      const b = bullet.y - (player.y + (player.size / 2));
       const distance = Math.sqrt((a ** 2) + (b ** 2));
 
-      if (distance < 20 && bullet.id != player.id) {
+      if (distance > 0 && bullet.id != player.id) { // Avoid division by zero
+        const gravityStrength = player.size * 100; // Adjust this constant to control gravity strength
+        const gravitationalPull = gravityStrength / (distance ** 2); // Gravity decreases with the square of the distance
+
+        // Update bullet velocity
+        bullet.velocityX -= (a / distance) * gravitationalPull;
+        bullet.velocityY -= (b / distance) * gravitationalPull;
+      }
+
+      if (distance < player.size / 2 && bullet.id != player.id) {
         console.log(bullet.id, player.id);
         player.health -= bullet.damage;
       }
@@ -271,6 +305,14 @@ function updatePlayers() {
   io.emit('players', players);
 }
 setInterval(updatePlayers, 32);
+
+function logStuff(){
+  console.log("Asteroid count: " + asteroids.length);
+  console.log("Asteroid mass: " + asteroidMass)
+  console.log("Collectables: " + collectables.length);
+  console.log("Bullet count: " + bullets.length);
+}
+setInterval(logStuff, 1000);
 
 // Start the server
 server.listen(3130, () => {
