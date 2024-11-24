@@ -62,7 +62,7 @@ function controlPlayer() {
         socket.emit("newClient", ship);
         return;
     }
-    ship.size = 20 + (ship.health * 4);
+    ship.size = 20 + (ship.health * 2);
 
     if (keys["ArrowLeft"] || keys["a"]) ship.angle -= 1.5;
     if (keys["ArrowRight"] || keys["d"]) ship.angle += 1.5;
@@ -191,13 +191,34 @@ function render() {
             playerElement.style.borderWidth = `0 ${player.size / 2}px ${player.size}px ${player.size / 2}px`;
             playerElement.style.transform = `rotate(${player.angle}deg)`;
 
+            const flameElement = document.createElement("div");
+            flameElement.classList.add("flame");
+
+            // Calculate flame size based on velocity
+            const velocityMagnitude = Math.sqrt(player.velocityX ** 2 + player.velocityY ** 2);
+            const maxFlameHeight = player.size * 1.5; // Maximum flame length (adjust as needed)
+            const flameHeight = Math.min(maxFlameHeight, velocityMagnitude * 10); // Scale velocity for effect
+
+            flameElement.style.position = "absolute";
+            flameElement.style.bottom = `${-flameHeight - ship.size}px`; // Position below the triangle
+            flameElement.style.left = "50%";
+            flameElement.style.transform = "translateX(-50%)";
+            flameElement.style.width = "0";
+            flameElement.style.height = "0";
+            flameElement.style.borderStyle = "solid";
+            flameElement.style.borderWidth = `${flameHeight}px ${player.size / 4}px 0 ${player.size / 4}px`;
+            flameElement.style.borderColor = `orange transparent transparent transparent`;
+
+            // Add the flame to the player element
+            playerElement.appendChild(flameElement);
+
             gameArea.appendChild(playerElement);
 
             const playerName = document.createElement("div");
             playerName.classList.add("player-name");
             playerName.textContent = player.name; // Display the player's name (you can set this when they join)
             playerName.style.left = `${player.x + (player.size / 2)}px`;
-            playerName.style.top = `${player.y + (player.size / 2)}px`; // Position it below the ship (adjust the value as needed)
+            playerName.style.top = `${player.y + (player.size / 2) + 50}px`; // Position it below the ship (adjust the value as needed)
             playerName.style.position = "absolute"; // Ensure it's positioned relative to the game area
             playerName.style.color = "white"; // Optional: style the text as needed
             playerName.style.fontSize = "12px"; // Optional: adjust the font size
@@ -216,8 +237,8 @@ function render() {
             asteroidElement.style.top = asteroid.y + "px";
             asteroidElement.style.width = asteroid.size + "px";
             asteroidElement.style.height = asteroid.size + "px";
+            asteroidElement.style.clipPath = `polygon(${asteroid.shape.map(p => `${50 + p[0]}% ${50 + p[1]}%`).join(", ")})`;
             asteroidElement.style.transform = `rotate(${asteroid.angle}deg)`;
-
 
             gameArea.appendChild(asteroidElement);
 

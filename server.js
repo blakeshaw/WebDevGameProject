@@ -105,9 +105,22 @@ function makeCollectables() {
 }
 setInterval(makeCollectables, 128);
 
+function generateAsteroidShape(size) {
+  const points = [];
+  const sides = Math.floor(Math.random() * 8) + 12;
+
+  for (let i = 0; i < sides; i++) {
+    const angle = (i / sides) * Math.PI * 2;
+    const radius = size / 2 + (Math.random() - 0.5) * (size / 3); // Slight variation in radius
+    const x = Math.cos(angle) * radius;
+    const y = Math.sin(angle) * radius;
+    points.push([x, y]);
+  }
+  return points;
+}
 function makeAsteroids() {
   while (asteroidMass < asteroidMassTarget && asteroids.length < 150) {
-    const size = 25 + (Math.random() * 150)
+    const size = 50 + (Math.random() * 150)
     const health = 1 + (Math.random() * (size / 20));
     const speedMultiplier = 4 - ((size / 50) * 2);
     asteroids.push({
@@ -118,6 +131,7 @@ function makeAsteroids() {
       size: size,
       health: health,
       angle: Math.random() * 360,
+      shape: generateAsteroidShape(size),
       angleVelocity: (Math.random() - 0.5),
       collisionUpdatesCooldownLeft: 0,
     });
@@ -143,7 +157,7 @@ function updateAsteroids() {
     // Check collisions with other asteroids
     for (let otherIndex = asteroidIndex + 1; otherIndex < asteroids.length; otherIndex++) {
       const other = asteroids[otherIndex];
-      if(!other) return;
+      if (!other) return;
       const a = (other.x + (other.size / 2)) - (asteroid.x + (asteroid.size / 2));
       const b = (other.y + (other.size / 2)) - (asteroid.y + (asteroid.size / 2));
       const distance = Math.sqrt((a ** 2) + (b ** 2));
@@ -219,6 +233,7 @@ function updateAsteroids() {
           size: newSize,
           health: newHealth,
           angle: Math.random() * 360,
+          shape: generateAsteroidShape(newSize),
           angleVelocity: (Math.random() - 0.5),
           collisionUpdatesCooldownLeft: 20,
         });
@@ -262,7 +277,7 @@ function updateBullets() {
 
         //Increase player score for killing an asteroid
         if (asteroid.health <= 0) {
-          if(!players[bullet.id]) return;
+          if (!players[bullet.id]) return;
           players[bullet.id].score += Math.round(asteroid.size / 2);
         }
       }
@@ -306,7 +321,7 @@ function updatePlayers() {
 }
 setInterval(updatePlayers, 32);
 
-function logStuff(){
+function logStuff() {
   console.log("Asteroid count: " + asteroids.length);
   console.log("Asteroid mass: " + asteroidMass)
   console.log("Collectables: " + collectables.length);
