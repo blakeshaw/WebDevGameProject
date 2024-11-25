@@ -24,6 +24,8 @@ let width = 5000;
 let height = 5000;
 let asteroidMass = 0;
 let asteroidMassTarget = 10000;
+let aiCount = 0;
+let aiTarget = 1;
 
 // define a route handler / that gets called when we hit website home
 app.get('/', (req, res) => {
@@ -60,7 +62,8 @@ io.on('connection', (socket) => {
   socket.on("removeCollectable", async (index) => {
     collectables.splice(index, 1);
   });
-  socket.on("makeBullet", async (bx, by, bvelocityX, bvelocityY, bdamage, bid) => {
+  socket.on("makeBullet", async (bx, by, bvelocityX, bvelocityY, bdamage, bid) => makeBullet(bx, by, bvelocityX, bvelocityY, bdamage, bid));
+  function makeBullet(bx, by, bvelocityX, bvelocityY, bdamage, bid) {
     bullets.push({
       x: bx,
       y: by,
@@ -70,7 +73,7 @@ io.on('connection', (socket) => {
       damage: bdamage,
       id: bid,
     });
-  });
+  }
 
   //Remove player from list of players when they disconnect.
   socket.on('disconnect', () => {
@@ -321,13 +324,110 @@ function updatePlayers() {
 }
 setInterval(updatePlayers, 32);
 
+function makeAI() {
+  while (aiCount < aiTarget) {
+    const id = "ai" + Math.round(Math.random() * 1000000);
+    players[id] = {
+      name: "AI",
+      id: id,
+      x: Math.random() * width,
+      y: Math.random() * height,
+      velocityX: 0,
+      velocityY: 0,
+      angle: 0,
+      size: 20,
+      health: 5,
+      damage: 1,
+      score: 0,
+      ammo: 0,
+      boostLeft: 0,
+    };
+    aiCount += 1;
+  }
+}
+makeAI();
+
+function updateAI() {
+  Object.values(players).forEach(player => {
+    if (player.id[0] + player.id[1] !== "ai") return; //If the player isn't an AI return.
+
+    let target = null; 
+    let minDistance = 1000; //Only look at things close to it
+
+    Object.values(players).forEach(other => { //Target players closer than 1000 first
+      if (player.id !== other.id) {
+        const a = (other.x + (other.size / 2)) - (player.x + (player.size / 2));
+        const b = (other.y + (other.size / 2)) - (player.y + (player.size / 2));
+        const distance = Math.sqrt((a ** 2) + (b ** 2));
+
+        if (distance < minDistance) {
+          minDistance = distance;
+          target = { type: "player", object: other };
+        }
+      }
+    });
+    if (!target) { //If there aren't any players
+      asteroids.forEach(asteroid => { //Look for asteroids
+        const a = (asteroid.x + (asteroid.size / 2)) - (player.x + (player.size / 2));
+        const b = (asteroid.y + (asteroid.size / 2)) - (player.y + (player.size / 2));
+        const distance = Math.sqrt((a ** 2) + (b ** 2));
+
+        if (distance < minDistance) {
+          minDistance = distance;
+          target = { type: "asteroid", object: asteroid };
+        }
+      });
+    }
+    if (!target) { //If no players or asteroids go for closest collectables.
+      collectables.forEach(collectable => {
+        const a = (collectable.x + (collectable.size / 2)) - (player.x + (player.size / 2));
+        const b = (collectable.y + (collectable.size / 2)) - (player.y + (player.size / 2));
+        const distance = Math.sqrt((a ** 2) + (b ** 2));
+
+        if (distance < minDistance) {
+          minDistance = distance;
+          target = { type: "collectable", object: collectable };
+        }
+      });
+    }
+    if (target) { //If there is a target avoid it or pursue it. 
+      let angleToTarget = Math.atan2(target.object.y - player.y, target.object.x - player.x) * (180 / Math.PI);
+      if (target.type === "player" || target.type === "asteroid") {
+        const angleDifference = Math.abs(Math.atan2(player.y - target.object.y, player.x - target.object.x) * (180 / Math.PI) - target.object.angle);
+        const targetVector = Math.sqrt(target.object.velocityX ** 2 + target.object.velocityY ** 2);
+
+        if (angleDifference <= 10 || Math.abs(angleDifference - 360) <= 10 && minDistance / targetVector > 50) {
+          angleToTarget += player.angle > 90;
+
+          if (Math.abs(player.velocityX) < 3) player.velocityX += Math.sin(player.angle * Math.PI / 180) * 0.01;
+          if (Math.abs(player.velocityY) < 3) player.velocityY += Math.cos(player.angle * Math.PI / 180) * 0.01;
+        }
+      }
+      if (angleToTarget <= player.angle + 10 && angleToTarget >= player.angle - 10) {
+        if (Math.abs(player.velocityX) < 3) player.velocityX += Math.sin(player.angle * Math.PI / 180) * 0.01;
+        if (Math.abs(player.velocityY) < 3) player.velocityY += Math.cos(player.angle * Math.PI / 180) * 0.01;
+      }else {
+        player.velocityX *= 0.75;
+        player.velocityY *= 0.75;
+      }
+      player.angle += (angleToTarget - player.angle) * 0.25;
+      player.x += player.velocityX;
+      player.y += player.velocityY;
+    }
+  });
+}
+setInterval(updateAI, 32);
+
+
+
+
 function logStuff() {
   console.log("Asteroid count: " + asteroids.length);
   console.log("Asteroid mass: " + asteroidMass)
   console.log("Collectables: " + collectables.length);
   console.log("Bullet count: " + bullets.length);
 }
-setInterval(logStuff, 1000);
+//setInterval(logStuff, 1000);
 
 // Start the server
 server.listen(3130, () => {
