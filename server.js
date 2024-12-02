@@ -306,7 +306,7 @@ function updateBullets() {
         console.log(bullet.id, player.id);
         player.health -= bullet.damage;
         bullet.updatesLeft = 0;
-        io.sockets.socket(player.id).emit("playerShot", bullet.damage);
+        io.to(player.id).emit("playerShot", bullet.damage);
       }
     });
 
