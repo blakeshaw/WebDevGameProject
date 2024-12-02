@@ -36,7 +36,7 @@ let leaderboard = {};
 let sortedLeaderboard = [];
 socket.on("players", (all_players) => { //Server sends updated list of players (locations, scores, etc.)
     players = all_players;
-    ship = all_players[socket.id];
+    //ship = all_players[socket.id];
     if (!ship) return;
 
     if (ship.health <= 0) { //if the player has died
@@ -173,7 +173,7 @@ function render() {
                     }
 
                     collectables.splice(index, 1);
-                    socket.emit("updatePlayer", socket.id, ship);
+                    //socket.emit("updatePlayer", socket.id, ship);
                     socket.emit("removeCollectable", index);
                 }
             }
