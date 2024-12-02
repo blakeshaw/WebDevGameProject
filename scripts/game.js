@@ -11,6 +11,7 @@ const game_area_y = 5000;
 let ship = { //Initialize a new ship for the player
     name: localStorage.getItem("player-name"),
     id: null,
+    color: localStorage.getItem("color-player"),
     x: Math.random() * game_area_x,
     y: Math.random() * game_area_y,
     velocityX: 0,
@@ -23,6 +24,7 @@ let ship = { //Initialize a new ship for the player
     ammo: 0,
     boostLeft: 0,
 }
+
 socket.emit('newClient', ship); //Tell the server about the new player
 socket.on("updateID", socket_id => { //Server sends the ID for the ship
     if (!ship) return;
@@ -192,6 +194,7 @@ function render() {
             playerElement.style.top = (player.y) + "px";
             playerElement.style.borderWidth = `0 ${player.size / 2}px ${player.size}px ${player.size / 2}px`;
             playerElement.style.transform = `rotate(${player.angle}deg)`;
+            playerElement.style.borderColor = `transparent transparent ${player.color} transparent`;
 
             const flameElement = document.createElement("div");
             flameElement.classList.add("flame");
