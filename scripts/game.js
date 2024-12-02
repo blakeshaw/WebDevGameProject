@@ -58,7 +58,7 @@ let lastBulletTime = 0;
 const bulletCooldown = 200;
 function controlPlayer() {
     players[socket.id] = ship;
-    
+
     if (!ship) return;
     if (!ship.id) {
         socket.emit("newClient", ship);
@@ -202,7 +202,7 @@ function render() {
             const flameHeight = Math.min(maxFlameHeight, velocityMagnitude * 10); // Scale velocity for effect
 
             flameElement.style.position = "absolute";
-            flameElement.style.bottom = `${-flameHeight - ship.size}px`; // Position below the triangle
+            flameElement.style.bottom = `${-flameHeight - player.size}px`; // Position below the triangle
             flameElement.style.left = "50%";
             flameElement.style.transform = "translateX(-50%)";
             flameElement.style.width = "0";

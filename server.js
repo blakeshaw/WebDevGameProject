@@ -27,7 +27,7 @@ let asteroidMassTarget = 10000;
 let asteroidCountTarget = 150;
 let collectableCountTarget = 300;
 let aiCount = 0;
-let aiTarget = 1;
+let aiTarget = 0;
 
 // define a route handler / that gets called when we hit website home
 app.get('/', (req, res) => {
