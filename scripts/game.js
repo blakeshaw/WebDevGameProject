@@ -55,6 +55,9 @@ socket.on("bullets", (all_bullets) => { //Server sends updated bullets
 socket.on("collectables", (all_collectables) => { //Server sends update collectables
     collectables = all_collectables;
 });
+socket.on("playerShot", (damage) => {
+    ship.health -= damage;
+});
 
 let lastBulletTime = 0;
 const bulletCooldown = 200;
