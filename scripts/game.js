@@ -57,6 +57,8 @@ socket.on("collectables", (all_collectables) => { //Server sends update collecta
 let lastBulletTime = 0;
 const bulletCooldown = 200;
 function controlPlayer() {
+    players[socket.id] = ship;
+    
     if (!ship) return;
     if (!ship.id) {
         socket.emit("newClient", ship);
