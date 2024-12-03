@@ -128,6 +128,22 @@ function makeAsteroids() {
     const size = 50 + (Math.random() * 150)
     const health = 1 + (Math.random() * (size / 20));
     const speedMultiplier = 4 - ((size / 50) * 2);
+    let x, y;
+    let validPosition = false;
+
+    for(let attempts = 0; attempts < 5 && !validPosition; attempts ++){
+      x = Math.random() * width;
+      y = Math.random() * height;
+
+      validPosition = true;
+      Object.values(players).forEach(player => {
+        validPosition = Math.sqrt((x - player.x) ** 2 + (y - player.y) ** 2) > 500;
+        if(!validPosition){
+          return;
+        }
+      });
+    }
+
     asteroids.push({
       x: Math.random() * width,
       y: Math.random() * height,

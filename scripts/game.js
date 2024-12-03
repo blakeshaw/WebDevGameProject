@@ -187,7 +187,6 @@ function render() {
                     }
 
                     collectables.splice(index, 1);
-                    //socket.emit("updatePlayer", socket.id, ship);
                     socket.emit("removeCollectable", index);
                 }
             }
@@ -316,4 +315,3 @@ function gameLoop() {
     requestAnimationFrame(gameLoop);
 }
 gameLoop();
-//setInterval(requestAnimationFrame(gameLoop), 32)
