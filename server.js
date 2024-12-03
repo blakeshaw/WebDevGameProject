@@ -36,6 +36,9 @@ app.get('/', (req, res) => {
 app.get('/game', (req, res) => {
   res.sendFile(join(__dirname, 'html/game.html'));
 });
+app.get('/audio-player', (req, res) => {
+  res.sendFile(join(__dirname, 'html/audio-player.html'));
+});
 
 // Then listen on the connection event for incoming sockets and log it to the console
 io.on('connection', (socket) => {

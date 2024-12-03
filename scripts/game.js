@@ -79,6 +79,10 @@ function controlPlayer() {
     const currentTime = Date.now();
     if (keys[" "] && currentTime - lastBulletTime > bulletCooldown && ship.ammo > 0) { //Shoot a bullet
         shot = true;
+        const gunshotSound = new Audio('../assets/cochise-type-space-gun-sfx.wav')
+        gunshotSound.currentTime = 0
+        gunshotSound.play
+
         const bulletVelocityX = ship.velocityX + Math.sin(ship.angle * Math.PI / 180) * 15; //Find velocities based on current angle/speed
         const bulletVelocityY = ship.velocityY - Math.cos(ship.angle * Math.PI / 180) * 15;
         socket.emit("makeBullet", ship.x + (ship.size / 2), ship.y + (ship.size / 2), bulletVelocityX, bulletVelocityY, ship.damage, socket.id); //Tell the server to make a bullet
