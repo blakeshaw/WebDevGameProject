@@ -4,6 +4,13 @@ let keys = {}; //keep track of which keys are pressed
 document.addEventListener("keydown", e => keys[e.key] = true);
 document.addEventListener("keyup", e => keys[e.key] = false);
 
+//Disconnect user if they switch tabs since movement is handled client side it freezes the player if they make the window "hidden"
+document.addEventListener("visibilitychange", () => {
+    if(document.hidden){
+        window.location.href = "/html/index.html";
+    }
+})
+
 const gameArea = document.getElementById("game-area");
 const game_area_x = 5000;
 const game_area_y = 5000;
@@ -171,7 +178,7 @@ function render() {
             if (distance < ship.size * 1.5) {
                 piece.x += ((ship.x + (ship.size / 2)) - piece.x) * 0.2;
                 piece.y += ((ship.y + (ship.size / 2)) - piece.y) * 0.2;
-                if (distance < 10) {
+                if (distance < ship.size / 3) {
                     if (piece.type == "ammo") {
                         ship.ammo += piece.amount;
                         ship.score += piece.amount;
