@@ -157,6 +157,8 @@ function render() {
     gameArea.style.top = offsetY + "px"
 
     //Render collectables
+    // TODO: When there is more than one player the collectables count increases by some crazy amount
+    // Fix this
     collectables.forEach((piece, index) => {
         if (!piece) return;
         if ((piece.x + offsetX >= -100 && piece.x + offsetX <= windowWidth + 100) && (piece.y + offsetY >= -100 && piece.y + offsetY <= windowHeight + 100)) {
