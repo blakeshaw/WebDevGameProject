@@ -145,8 +145,8 @@ function makeAsteroids() {
     }
 
     asteroids.push({
-      x: Math.random() * width,
-      y: Math.random() * height,
+      x: x,
+      y: y,
       velocityX: (Math.random() - 0.5) * speedMultiplier,
       velocityY: (Math.random() - 0.5) * speedMultiplier,
       size: size,
