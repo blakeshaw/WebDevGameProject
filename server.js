@@ -24,8 +24,10 @@ let width = 5000;
 let height = 5000;
 let asteroidMass = 0;
 let asteroidMassTarget = 10000;
+let asteroidCountTarget = 150;
+let collectableCountTarget = 300;
 let aiCount = 0;
-let aiTarget = 1;
+let aiTarget = 0;
 
 // define a route handler / that gets called when we hit website home
 app.get('/', (req, res) => {
@@ -103,7 +105,7 @@ function makeCollectables() {
       type: collectableType,
     });
   }
-  while (collectables.length > 350) {
+  while (collectables.length > collectableCountTarget) {
     const toDelete = Math.round(Math.random() * collectables.length);
     collectables.splice(toDelete, 1);
   }
@@ -125,13 +127,29 @@ function generateAsteroidShape(size) {
   return points;
 }
 function makeAsteroids() {
-  while (asteroidMass < asteroidMassTarget && asteroids.length < 150) {
+  while (asteroidMass < asteroidMassTarget && asteroids.length < asteroidCountTarget) {
     const size = 50 + (Math.random() * 150)
     const health = 1 + (Math.random() * (size / 20));
     const speedMultiplier = 4 - ((size / 50) * 2);
+    let x, y;
+    let validPosition = false;
+
+    for(let attempts = 0; attempts < 5 && !validPosition; attempts ++){
+      x = Math.random() * width;
+      y = Math.random() * height;
+
+      validPosition = true;
+      Object.values(players).forEach(player => {
+        validPosition = Math.sqrt((x - player.x) ** 2 + (y - player.y) ** 2) > 500;
+        if(!validPosition){
+          return;
+        }
+      });
+    }
+
     asteroids.push({
-      x: Math.random() * width,
-      y: Math.random() * height,
+      x: x,
+      y: y,
       velocityX: (Math.random() - 0.5) * speedMultiplier,
       velocityY: (Math.random() - 0.5) * speedMultiplier,
       size: size,
@@ -306,6 +324,8 @@ function updateBullets() {
       if (distance < player.size / 2 && bullet.id != player.id) {
         console.log(bullet.id, player.id);
         player.health -= bullet.damage;
+        bullet.updatesLeft = 0;
+        io.to(player.id).emit("playerShot", bullet.damage);
       }
     });
 
@@ -315,7 +335,6 @@ function updateBullets() {
     } else {
       const index = bullets.indexOf(bullet);
       if (index > -1) bullets.splice(index, 1);
-      return;
     }
   });
   io.emit('bullets', bullets);
@@ -420,9 +439,6 @@ function updateAI() {
   });
 }
 setInterval(updateAI, 32);
-
-
-
 
 function logStuff() {
   console.log("Asteroid count: " + asteroids.length);

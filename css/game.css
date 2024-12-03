@@ -55,7 +55,6 @@ body {
     /*border-width: 0 10px 20px 10px;*/
     border-style: solid;
     background-color: transparent;
-    border-color: transparent transparent white transparent;
     transform-origin: 50% 50%;
 }
 

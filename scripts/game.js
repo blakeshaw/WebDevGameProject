@@ -4,6 +4,13 @@ let keys = {}; //keep track of which keys are pressed
 document.addEventListener("keydown", e => keys[e.key] = true);
 document.addEventListener("keyup", e => keys[e.key] = false);
 
+//Disconnect user if they switch tabs since movement is handled client side it freezes the player if they make the window "hidden"
+document.addEventListener("visibilitychange", () => {
+    if(document.hidden){
+        window.location.href = "/html/index.html";
+    }
+})
+
 const gameArea = document.getElementById("game-area");
 const game_area_x = 5000;
 const game_area_y = 5000;
@@ -11,6 +18,7 @@ const game_area_y = 5000;
 let ship = { //Initialize a new ship for the player
     name: localStorage.getItem("player-name"),
     id: null,
+    color: localStorage.getItem("color-player"),
     x: Math.random() * game_area_x,
     y: Math.random() * game_area_y,
     velocityX: 0,
@@ -23,6 +31,7 @@ let ship = { //Initialize a new ship for the player
     ammo: 0,
     boostLeft: 0,
 }
+
 socket.emit('newClient', ship); //Tell the server about the new player
 socket.on("updateID", socket_id => { //Server sends the ID for the ship
     if (!ship) return;
@@ -36,7 +45,7 @@ let leaderboard = {};
 let sortedLeaderboard = [];
 socket.on("players", (all_players) => { //Server sends updated list of players (locations, scores, etc.)
     players = all_players;
-    ship = all_players[socket.id];
+    //ship = all_players[socket.id];
     if (!ship) return;
 
     if (ship.health <= 0) { //if the player has died
@@ -53,10 +62,15 @@ socket.on("bullets", (all_bullets) => { //Server sends updated bullets
 socket.on("collectables", (all_collectables) => { //Server sends update collectables
     collectables = all_collectables;
 });
+socket.on("playerShot", (damage) => {
+    ship.health -= damage;
+});
 
 let lastBulletTime = 0;
 const bulletCooldown = 200;
 function controlPlayer() {
+    players[socket.id] = ship;
+
     if (!ship) return;
     if (!ship.id) {
         socket.emit("newClient", ship);
@@ -64,14 +78,14 @@ function controlPlayer() {
     }
     ship.size = 20 + (ship.health * 2);
 
-    if (keys["ArrowLeft"] || keys["a"]) ship.angle -= 1.5;
-    if (keys["ArrowRight"] || keys["d"]) ship.angle += 1.5;
+    if (keys["ArrowLeft"] || keys["a"]) ship.angle -= 2.75;
+    if (keys["ArrowRight"] || keys["d"]) ship.angle += 2.75;
     if (keys["ArrowUp"] || keys["w"]) {
-        if (Math.abs(ship.velocityX) < 3) ship.velocityX += Math.sin(ship.angle * Math.PI / 180) * 0.01;
-        if (Math.abs(ship.velocityY) < 3) ship.velocityY += Math.cos(ship.angle * Math.PI / 180) * 0.01;
+        if (Math.abs(ship.velocityX) < 7) ship.velocityX += Math.sin(ship.angle * Math.PI / 180) * 0.05;
+        if (Math.abs(ship.velocityY) < 7) ship.velocityY += Math.cos(ship.angle * Math.PI / 180) * 0.05;
     } else if (keys["ArrowDown"] || keys["s"]) {
-        if (Math.abs(ship.velocityX) < 3) ship.velocityX -= Math.sin(ship.angle * Math.PI / 180) * 0.002;
-        if (Math.abs(ship.velocityY) < 3) ship.velocityY -= Math.cos(ship.angle * Math.PI / 180) * 0.002;
+        if (Math.abs(ship.velocityX) < 7) ship.velocityX -= Math.sin(ship.angle * Math.PI / 180) * 0.002;
+        if (Math.abs(ship.velocityY) < 7) ship.velocityY -= Math.cos(ship.angle * Math.PI / 180) * 0.002;
     } else {
         ship.velocityX *= 0.993;
         ship.velocityY *= 0.993;
@@ -147,6 +161,8 @@ function render() {
     gameArea.style.top = offsetY + "px"
 
     //Render collectables
+    // TODO: When there is more than one player the collectables count increases by some crazy amount
+    // Fix this
     collectables.forEach((piece, index) => {
         if (!piece) return;
         if ((piece.x + offsetX >= -100 && piece.x + offsetX <= windowWidth + 100) && (piece.y + offsetY >= -100 && piece.y + offsetY <= windowHeight + 100)) {
@@ -168,7 +184,7 @@ function render() {
             if (distance < ship.size * 1.5) {
                 piece.x += ((ship.x + (ship.size / 2)) - piece.x) * 0.2;
                 piece.y += ((ship.y + (ship.size / 2)) - piece.y) * 0.2;
-                if (distance < 10) {
+                if (distance < ship.size / 3) {
                     if (piece.type == "ammo") {
                         ship.ammo += piece.amount;
                         ship.score += piece.amount;
@@ -177,7 +193,6 @@ function render() {
                     }
 
                     collectables.splice(index, 1);
-                    socket.emit("updatePlayer", socket.id, ship);
                     socket.emit("removeCollectable", index);
                 }
             }
@@ -194,6 +209,7 @@ function render() {
             playerElement.style.top = (player.y) + "px";
             playerElement.style.borderWidth = `0 ${player.size / 2}px ${player.size}px ${player.size / 2}px`;
             playerElement.style.transform = `rotate(${player.angle}deg)`;
+            playerElement.style.borderColor = `transparent transparent ${player.color} transparent`;
 
             const flameElement = document.createElement("div");
             flameElement.classList.add("flame");
@@ -204,7 +220,7 @@ function render() {
             const flameHeight = Math.min(maxFlameHeight, velocityMagnitude * 10); // Scale velocity for effect
 
             flameElement.style.position = "absolute";
-            flameElement.style.bottom = `${-flameHeight - ship.size}px`; // Position below the triangle
+            flameElement.style.bottom = `${-flameHeight - player.size}px`; // Position below the triangle
             flameElement.style.left = "50%";
             flameElement.style.transform = "translateX(-50%)";
             flameElement.style.width = "0";
@@ -282,9 +298,25 @@ function render() {
     })
 }
 
+//Make game logic happen at the same rate for (most) computers for consistent game play across clients:
+let lastTime = 0;
+const fixedTimeStep = 1000 / 60; //The 60 is for 60 fps --> Rendering will happen as fast as possible though
+let accumulatedTime = 0;
+
 function gameLoop() {
-    controlPlayer();
-    updateHUD();
+    const currentTime = Date.now();
+    const deltaTime = Math.min(currentTime - lastTime, 1000);
+    lastTime = currentTime
+
+    accumulatedTime += deltaTime;
+
+    //Make things in while loop only happen every xFPS
+    while(accumulatedTime >= fixedTimeStep) {
+        controlPlayer();
+        updateHUD();
+        accumulatedTime -= fixedTimeStep;
+    }
+    //Have the things happen out of while loop as much as possible.
     render();
     requestAnimationFrame(gameLoop);
 }
