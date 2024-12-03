@@ -421,9 +421,6 @@ function updateAI() {
 }
 setInterval(updateAI, 32);
 
-
-
-
 function logStuff() {
   console.log("Asteroid count: " + asteroids.length);
   console.log("Asteroid mass: " + asteroidMass)
