@@ -179,22 +179,20 @@ function render() {
             const a = (ship.x + (ship.size / 2)) - (piece.x + (piece.amount / 2));
             const b = (ship.y + (ship.size / 2)) - (piece.y + (piece.amount / 2));
             const distance = Math.sqrt((a ** 2) + (b ** 2));
-            socket.emit("updateCollectables", piece, index);
-
-            if (distance < ship.size * 1.5) {
+            
+            if (distance < ship.size / 3) {
+                if (piece.type == "ammo") {
+                    ship.ammo += piece.amount;
+                    ship.score += piece.amount;
+                } else if (piece.type == "health") {
+                    ship.health += piece.amount;
+                }
+                collectables.splice(index, 1);
+                socket.emit("removeCollectable", index);
+            }else if(distance < ship.size * 1.5) {
                 piece.x += ((ship.x + (ship.size / 2)) - piece.x) * 0.2;
                 piece.y += ((ship.y + (ship.size / 2)) - piece.y) * 0.2;
-                if (distance < ship.size / 3) {
-                    if (piece.type == "ammo") {
-                        ship.ammo += piece.amount;
-                        ship.score += piece.amount;
-                    } else if (piece.type == "health") {
-                        ship.health += piece.amount;
-                    }
-
-                    collectables.splice(index, 1);
-                    socket.emit("removeCollectable", index);
-                }
+                socket.emit("updateCollectables", piece, index);
             }
         }
     });
