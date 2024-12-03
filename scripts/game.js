@@ -71,14 +71,14 @@ function controlPlayer() {
     }
     ship.size = 20 + (ship.health * 2);
 
-    if (keys["ArrowLeft"] || keys["a"]) ship.angle -= 1.5;
-    if (keys["ArrowRight"] || keys["d"]) ship.angle += 1.5;
+    if (keys["ArrowLeft"] || keys["a"]) ship.angle -= 2.75;
+    if (keys["ArrowRight"] || keys["d"]) ship.angle += 2.75;
     if (keys["ArrowUp"] || keys["w"]) {
-        if (Math.abs(ship.velocityX) < 3) ship.velocityX += Math.sin(ship.angle * Math.PI / 180) * 0.01;
-        if (Math.abs(ship.velocityY) < 3) ship.velocityY += Math.cos(ship.angle * Math.PI / 180) * 0.01;
+        if (Math.abs(ship.velocityX) < 7) ship.velocityX += Math.sin(ship.angle * Math.PI / 180) * 0.05;
+        if (Math.abs(ship.velocityY) < 7) ship.velocityY += Math.cos(ship.angle * Math.PI / 180) * 0.05;
     } else if (keys["ArrowDown"] || keys["s"]) {
-        if (Math.abs(ship.velocityX) < 3) ship.velocityX -= Math.sin(ship.angle * Math.PI / 180) * 0.002;
-        if (Math.abs(ship.velocityY) < 3) ship.velocityY -= Math.cos(ship.angle * Math.PI / 180) * 0.002;
+        if (Math.abs(ship.velocityX) < 7) ship.velocityX -= Math.sin(ship.angle * Math.PI / 180) * 0.002;
+        if (Math.abs(ship.velocityY) < 7) ship.velocityY -= Math.cos(ship.angle * Math.PI / 180) * 0.002;
     } else {
         ship.velocityX *= 0.993;
         ship.velocityY *= 0.993;
@@ -286,10 +286,27 @@ function render() {
     })
 }
 
+//Make game logic happen at the same rate for (most) computers for consistent game play across clients:
+let lastTime = 0;
+const fixedTimeStep = 1000 / 60; //The 60 is for 60 fps --> Rendering will happen as fast as possible though
+let accumulatedTime = 0;
+
 function gameLoop() {
-    controlPlayer();
-    updateHUD();
+    const currentTime = Date.now();
+    const deltaTime = Math.min(currentTime - lastTime, 1000);
+    lastTime = currentTime
+
+    accumulatedTime += deltaTime;
+
+    //Make things in while loop only happen every xFPS
+    while(accumulatedTime >= fixedTimeStep) {
+        controlPlayer();
+        updateHUD();
+        accumulatedTime -= fixedTimeStep;
+    }
+    //Have the things happen out of while loop as much as possible.
     render();
     requestAnimationFrame(gameLoop);
 }
 gameLoop();
+//setInterval(requestAnimationFrame(gameLoop), 32)
