@@ -365,7 +365,7 @@ function updatePlayers() {
     }
   })
 }
-setInterval(updatePlayers, 32);
+setInterval(updatePlayers, 16);
 
 function makeAI() {
   while (aiCount < aiTarget) {
