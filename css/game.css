@@ -47,6 +47,14 @@ body {
     position: absolute;
     border: 5px solid green;
 }
+.boost {
+    background-color: purple;
+    border-radius: 0; /* Remove rounding */
+    position: absolute;
+    border: 5px solid purple;
+    width: 100px; /* Example width */
+    height: 100px; /* Example height */
+}
 
 .player {
     position: absolute;
@@ -93,3 +101,13 @@ body {
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.5); /* Subtle shadow for depth */
     max-width: 20%;
 }
+.boost-bar{
+    width: 100px;
+    height: 15px;
+    background-color: white;
+    border: 2px solid white;
+    border-radius: 5px;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 2px;
+  }

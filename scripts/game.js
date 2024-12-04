@@ -14,7 +14,7 @@ document.addEventListener("visibilitychange", () => {
 const gameArea = document.getElementById("game-area");
 const game_area_x = 5000;
 const game_area_y = 5000;
-const gunshotSound = new Audio('../assets/cochise-type-space-gun-sfx.wav')
+const gunshotSound = new Audio('../assets/audio/gunshot-sound-effect.mp3')
 
 let ship = { //Initialize a new ship for the player
     name: localStorage.getItem("player-name"),
@@ -30,7 +30,8 @@ let ship = { //Initialize a new ship for the player
     damage: 1,
     score: 0,
     ammo: 0,
-    boostLeft: 0,
+    boost: 0,
+    boost_ingage: false,
 }
 
 socket.emit('newClient', ship); //Tell the server about the new player
@@ -68,7 +69,9 @@ socket.on("playerShot", (damage) => {
 });
 
 let lastBulletTime = 0;
+let lastBoost = 0;
 const bulletCooldown = 200;
+let boostCooldown = 3000;
 function controlPlayer() {
     players[socket.id] = ship;
 
@@ -78,25 +81,40 @@ function controlPlayer() {
         return;
     }
     ship.size = 20 + (ship.health * 2);
-
+    //ingage boost
+    const currentTime = Date.now();
+    if (keys["Shift"] && !ship.boost_ingage && ship.boost > 0) {
+        ship.boost_ingage = true;
+        ship.boost -= 1;
+        lastBoost = currentTime;
+    }
+    if (ship.boost_ingage && currentTime - lastBoost > boostCooldown){
+        ship.boost_ingage = false;
+    }
     if (keys["ArrowLeft"] || keys["a"]) ship.angle -= 2.75;
     if (keys["ArrowRight"] || keys["d"]) ship.angle += 2.75;
-    if (keys["ArrowUp"] || keys["w"]) {
+    if (keys["ArrowUp"] || keys["w"] && ship.boost_ingage) {
+        if (Math.abs(ship.velocityX) < 10) ship.velocityX += Math.sin(ship.angle * Math.PI / 180) * 0.07;
+        if (Math.abs(ship.velocityY) < 10) ship.velocityY += Math.cos(ship.angle * Math.PI / 180) * 0.07; 
+    } else if (keys["ArrowUp"] || keys["w"]) {
         if (Math.abs(ship.velocityX) < 7) ship.velocityX += Math.sin(ship.angle * Math.PI / 180) * 0.05;
-        if (Math.abs(ship.velocityY) < 7) ship.velocityY += Math.cos(ship.angle * Math.PI / 180) * 0.05;
+        if (Math.abs(ship.velocityY) < 7) ship.velocityY += Math.cos(ship.angle * Math.PI / 180) * 0.05; 
+    } else if (keys["ArrowDown"] || keys["s"] && ship.boost_ingage) {
+        if (Math.abs(ship.velocityX) < 7) ship.velocityX -= Math.sin(ship.angle * Math.PI / 180) * 0.003;
+        if (Math.abs(ship.velocityY) < 7) ship.velocityY -= Math.cos(ship.angle * Math.PI / 180) * 0.003;
     } else if (keys["ArrowDown"] || keys["s"]) {
         if (Math.abs(ship.velocityX) < 7) ship.velocityX -= Math.sin(ship.angle * Math.PI / 180) * 0.002;
         if (Math.abs(ship.velocityY) < 7) ship.velocityY -= Math.cos(ship.angle * Math.PI / 180) * 0.002;
     } else {
-        ship.velocityX *= 0.993;
-        ship.velocityY *= 0.993;
+        ship.velocityX *= 0.990;
+        ship.velocityY *= 0.990;
     }
-    const currentTime = Date.now();
+
     if (keys[" "] && currentTime - lastBulletTime > bulletCooldown && ship.ammo > 0) { //Shoot a bullet
         shot = true;
-        /*const gunshotSound = new Audio('../assets/cochise-type-space-gun-sfx.wav')*/
-        gunshotSound.currentTime = 0
-        gunshotSound.play
+        
+        gunshotSound.currentTime = 0 //sets audio time to start
+        gunshotSound.play //play gunshot sound effect
 
         const bulletVelocityX = ship.velocityX + Math.sin(ship.angle * Math.PI / 180) * 15; //Find velocities based on current angle/speed
         const bulletVelocityY = ship.velocityY - Math.cos(ship.angle * Math.PI / 180) * 15;
@@ -133,6 +151,11 @@ function updateHUD() { //Updates personal hud as well as the leaderboard
     document.getElementById("health").textContent = `Health: ${ship.health}`;
     document.getElementById("score").textContent = `Score: ${ship.score}`;
     document.getElementById("ammo").textContent = `Ammo: ${ship.ammo}`;
+    
+    const fillElement = document.getElementById("fill");
+    const fillSize = ship.boost * 25;
+    fillElement.style.width = `${fillSize}px`;
+
 
     const playerArray = Object.values(players);
     playerArray.sort((a, b) => b.score - a.score);
@@ -185,6 +208,8 @@ function render() {
                     ship.score += piece.amount;
                 } else if (piece.type == "health") {
                     ship.health += piece.amount;
+                    } else if (piece.type == "boost" && ship.boost < 4) {
+                        ship.boost += 1;
                 }
                 collectables.splice(index, 1);
                 socket.emit("removeCollectable", index);
@@ -224,7 +249,8 @@ function render() {
             flameElement.style.height = "0";
             flameElement.style.borderStyle = "solid";
             flameElement.style.borderWidth = `${flameHeight}px ${player.size / 4}px 0 ${player.size / 4}px`;
-            flameElement.style.borderColor = `orange transparent transparent transparent`;
+            if (ship.boost_ingage) flameElement.style.borderColor = `purple transparent transparent transparent`;
+            else flameElement.style.borderColor = `orange transparent transparent transparent`;
 
             // Add the flame to the player element
             playerElement.appendChild(flameElement);

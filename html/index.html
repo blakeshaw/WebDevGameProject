@@ -51,7 +51,10 @@
         .instructions p {
             margin-bottom: 10px;
         }
-        #player-name, #start-button, #color-player {
+
+        #player-name,
+        #start-button,
+        #color-player {
             display: block;
             margin: 10px auto;
         }
@@ -136,7 +139,10 @@
     </style>
 </head>
 
+
 <body>
+
+
     <!-- Background container for asteroids -->
     <div id="gameArea"></div>
 
@@ -151,6 +157,8 @@
             <ul>
                 <p>WASD/Arrow Keys to Move</p>
                 <p>Spacebar to Shoot</p>
+                <p>Shift to ingage boost</p>
+
             </ul>
         </div>
         <div>
@@ -160,7 +168,6 @@
                 <option value="blue">Blue</option>
                 <option value="green">Green</option>
                 <option value="yellow">Yellow</option>
-                <option value="purple">Purple</option>
                 <option selected="selected" value="white">White</option>
             </select>
             <button id="start-button">Start Game</button>
@@ -170,84 +177,86 @@
     <!-- load the socket.io-client -->
     <script src="/socket.io/socket.io.js"></script>
     <script>
-        const socket = io();
-        
-        const startButton = document.getElementById('start-button');
-        const playerNameInput = document.getElementById("player-name");
-        const colorPlayer = document.getElementById("color-player");
-
-        let prevName = localStorage.getItem("player-name");
-        let prevColor = localStorage.getItem("color-player");
-        if (prevName) {
-            playerNameInput.value = prevName;
-        }
-        if (prevColor) {
-            colorPlayer.value = prevColor;
-        }
-
-        startButton.addEventListener('click', () => {
-            localStorage.setItem("player-name", playerNameInput.value.trim());
-            localStorage.setItem("color-player", colorPlayer.value.trim());
-            window.location.href = '/game';
+        document.addEventListener("DOMContentLoaded", () => {
+            const audio = new Audio("../assets/audio/elevator-to-heaven-aaron-paul-low-main-version-21242-01-42.mp3");
+            audio.loop = true;
+            audio.play().catch(err => console.error("Audio playback failed: ", err)); // Start audio
         });
 
-        // Home screen asteroids setup
-        const gameArea = document.getElementById("gameArea");
-        let asteroids = [];
-        
-        function createAsteroids() {
-            for (let i = 0; i < 20; i++) {
-                asteroids.push({
-                    x: Math.random() * window.innerWidth,
-                    y: Math.random() * window.innerHeight,
-                    velocityX: (Math.random() - 0.5) * 2,
-                    velocityY: (Math.random() - 0.5) * 2,
-                    size: 25 + Math.random() * 100,
+            const socket = io();
+
+            const startButton = document.getElementById('start-button');
+            const playerNameInput = document.getElementById("player-name");
+            const colorPlayer = document.getElementById("color-player");
+
+            let prevName = localStorage.getItem("player-name");
+            let prevColor = localStorage.getItem("color-player");
+            if (prevName) {
+                playerNameInput.value = prevName;
+            }
+            if (prevColor) {
+                colorPlayer.value = prevColor;
+            }
+
+            startButton.addEventListener('click', () => {
+                localStorage.setItem("player-name", playerNameInput.value.trim());
+                localStorage.setItem("color-player", colorPlayer.value.trim());
+                window.location.href = '/game';
+            });
+
+            // Home screen asteroids setup
+            const gameArea = document.getElementById("gameArea");
+            let asteroids = [];
+
+            function createAsteroids() {
+                for (let i = 0; i < 20; i++) {
+                    asteroids.push({
+                        x: Math.random() * window.innerWidth,
+                        y: Math.random() * window.innerHeight,
+                        velocityX: (Math.random() - 0.5) * 2,
+                        velocityY: (Math.random() - 0.5) * 2,
+                        size: 25 + Math.random() * 100,
+                    });
+                }
+            }
+
+            function moveAsteroids() {
+                asteroids.forEach(asteroid => {
+                    asteroid.x += asteroid.velocityX;
+                    asteroid.y += asteroid.velocityY;
+
+                    // Wrap asteroids around edges
+                    if (asteroid.x < 0) asteroid.x = window.innerWidth;
+                    if (asteroid.x > window.innerWidth) asteroid.x = 0;
+                    if (asteroid.y < 0) asteroid.y = window.innerHeight;
+                    if (asteroid.y > window.innerHeight) asteroid.y = 0;
                 });
             }
-        }
 
-        function moveAsteroids() {
-            asteroids.forEach(asteroid => {
-                asteroid.x += asteroid.velocityX;
-                asteroid.y += asteroid.velocityY;
+            function render() {
+                gameArea.innerHTML = "";
 
-                // Wrap asteroids around edges
-                if (asteroid.x < 0) asteroid.x = window.innerWidth;
-                if (asteroid.x > window.innerWidth) asteroid.x = 0;
-                if (asteroid.y < 0) asteroid.y = window.innerHeight;
-                if (asteroid.y > window.innerHeight) asteroid.y = 0;
-            });
-        }
+                // Render asteroids
+                asteroids.forEach(asteroid => {
+                    const asteroidElement = document.createElement("div");
+                    asteroidElement.classList.add("asteroid");
+                    asteroidElement.style.left = asteroid.x + "px";
+                    asteroidElement.style.top = asteroid.y + "px";
+                    asteroidElement.style.width = asteroid.size + "px";
+                    asteroidElement.style.height = asteroid.size + "px";
+                    gameArea.appendChild(asteroidElement);
+                });
+            }
 
-        function render() {
-            gameArea.innerHTML = "";
+            function gameLoop() {
+                moveAsteroids();
+                render();
+                requestAnimationFrame(gameLoop);
+            }
 
-            // Render asteroids
-            asteroids.forEach(asteroid => {
-                const asteroidElement = document.createElement("div");
-                asteroidElement.classList.add("asteroid");
-                asteroidElement.style.left = asteroid.x + "px";
-                asteroidElement.style.top = asteroid.y + "px";
-                asteroidElement.style.width = asteroid.size + "px";
-                asteroidElement.style.height = asteroid.size + "px";
-                gameArea.appendChild(asteroidElement);
-            });
-        }
-
-        function gameLoop() {
-            moveAsteroids();
-            render();
-            requestAnimationFrame(gameLoop);
-        }
-
-        createAsteroids();
-        gameLoop();
+            createAsteroids();
+            gameLoop();
     </script>
-    <audio autoplay loop>
-        <source src="../assets/audio/elevator-to-heaven-aaron-paul-low-main-version-21242-01-42.mp3" type="audio/mpeg">
-        Your browser does not support the audio element.
-    </audio>
 </body>
 
 </html>
