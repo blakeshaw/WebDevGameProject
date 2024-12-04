@@ -49,9 +49,11 @@ body {
 }
 .boost {
     background-color: purple;
-    border-radius: 50%;
+    border-radius: 0; /* Remove rounding */
     position: absolute;
     border: 5px solid purple;
+    width: 100px; /* Example width */
+    height: 100px; /* Example height */
 }
 
 .player {
