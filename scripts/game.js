@@ -14,7 +14,7 @@ document.addEventListener("visibilitychange", () => {
 const gameArea = document.getElementById("game-area");
 const game_area_x = 5000;
 const game_area_y = 5000;
-const gunshotSound = new Audio('../assets/cochise-type-space-gun-sfx.wav')
+const gunshotSound = new Audio('../assets/audio/gunshot-sound-effect.mp3')
 
 let ship = { //Initialize a new ship for the player
     name: localStorage.getItem("player-name"),
@@ -94,9 +94,9 @@ function controlPlayer() {
     const currentTime = Date.now();
     if (keys[" "] && currentTime - lastBulletTime > bulletCooldown && ship.ammo > 0) { //Shoot a bullet
         shot = true;
-        /*const gunshotSound = new Audio('../assets/cochise-type-space-gun-sfx.wav')*/
-        gunshotSound.currentTime = 0
-        gunshotSound.play
+        
+        gunshotSound.currentTime = 0 //sets audio time to start
+        gunshotSound.play //play gunshot sound effect
 
         const bulletVelocityX = ship.velocityX + Math.sin(ship.angle * Math.PI / 180) * 15; //Find velocities based on current angle/speed
         const bulletVelocityY = ship.velocityY - Math.cos(ship.angle * Math.PI / 180) * 15;
