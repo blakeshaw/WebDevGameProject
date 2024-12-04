@@ -226,7 +226,7 @@ function render() {
     //Render ships
     Object.values(players).forEach(player => {
         if (!player) return;
-        if (player.id == socket.id) player = ship; //Make sure the most current version of self is used.
+        if (player.id == socket.id) player = ship; //Make sure the most current version of self is used. (fixes weird lag client side)
         if ((player.x + offsetX >= -100 && player.x + offsetX <= (windowWidth + 100)) && (player.y + offsetY >= -100 && player.y + offsetY <= (windowHeight + 100))) {
             const playerElement = document.createElement("div");
             playerElement.classList.add("player");
