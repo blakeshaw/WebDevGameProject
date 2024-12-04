@@ -28,7 +28,7 @@ body {
 .bullet {
     width: 2px;
     height: 2px;
-    background-color: red;
+    background-color: pink;
     border-radius: 50%;
     position: absolute;
     border: 1px solid red;
