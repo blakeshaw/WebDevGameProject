@@ -342,8 +342,6 @@ function gameLoop() {
         controlPlayer();
         updateHUD();
         accumulatedTime -= fixedTimeStep;
-
-        console.log(ship.velocityX, ship.velocityY);
     }
     //Have the things happen out of while loop as much as possible.
     render();
