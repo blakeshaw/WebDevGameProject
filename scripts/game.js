@@ -15,6 +15,7 @@ const gameArea = document.getElementById("game-area");
 const game_area_x = 5000;
 const game_area_y = 5000;
 const gunshotSound = new Audio('../assets/audio/gunshot-sound-effect.mp3')
+const boostNoise = new Audio('../assets/audio/boost-noise.mp3')
 
 let ship = { //Initialize a new ship for the player
     name: localStorage.getItem("player-name"),
@@ -85,6 +86,8 @@ function controlPlayer() {
         ship.boostEngage = true;
         ship.boost -= 1;
         lastBoost = currentTime;
+        boostNoise.currentTime = 0
+        boostNoise.play
     }
     if (ship.boostEngage && currentTime - lastBoost > boostCooldown){
         ship.boostEngage = false;
