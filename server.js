@@ -328,6 +328,7 @@ function updateBullets() {
 
         if(player.health <= 0 && players[bullet.id]){
           players[bullet.id].score += player.score / 2;
+          io.to(bullet.id).emit("increaseScore", player.score / 2);
         }
         bullet.updatesLeft = 0;
         io.to(player.id).emit("playerShot", bullet.damage);

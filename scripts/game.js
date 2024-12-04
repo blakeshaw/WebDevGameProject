@@ -64,6 +64,9 @@ socket.on("playerShot", (damage) => {
 socket.on("returnToTitle", () =>{
     window.location.href = "/html/index.html";
 });
+socket.on("increaseScore", (amount) => {
+    ship.score += amount;
+});
 
 
 //Function dedicated to updating the player 
