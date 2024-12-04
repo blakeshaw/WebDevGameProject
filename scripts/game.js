@@ -32,7 +32,7 @@ let ship = { //Initialize a new ship for the player
     score: 0,
     ammo: 0,
     boost: 0,
-    boost_ingage: false,
+    boostEngage: false,
 }
 
 socket.emit('newClient', ship); //Tell the server about the new player
@@ -48,13 +48,6 @@ let leaderboard = {};
 let sortedLeaderboard = [];
 socket.on("players", (all_players) => { //Server sends updated list of players (locations, scores, etc.)
     players = all_players;
-    //ship = all_players[socket.id];
-    if (!ship) return;
-
-    if (ship.health <= 0) { //if the player has died
-        window.location.href = '/';
-        socket.emit("makeCollectables", ship.x, ship.y, ship.ammo);
-    }
 });
 socket.on("asteroids", (all_asteroids) => { // Server sends updated asteroids
     asteroids = all_asteroids;
@@ -68,7 +61,12 @@ socket.on("collectables", (all_collectables) => { //Server sends update collecta
 socket.on("playerShot", (damage) => {
     ship.health -= damage;
 });
+socket.on("returnToTitle", () =>{
+    window.location.href = "/html/index.html";
+});
 
+
+//Function dedicated to updating the player 
 let lastBulletTime = 0;
 let lastBoost = 0;
 const bulletCooldown = 200;
@@ -84,33 +82,33 @@ function controlPlayer() {
     ship.size = 20 + (ship.health * 2);
     //ingage boost
     const currentTime = Date.now();
-    if (keys["Shift"] && !ship.boost_ingage && ship.boost > 0) {
-        ship.boost_ingage = true;
+    if (keys["Shift"] && !ship.boostEngage && ship.boost > 0) {
+        ship.boostEngage = true;
         ship.boost -= 1;
         lastBoost = currentTime;
         boostNoise.currentTime = 0
         boostNoise.play
     }
-    if (ship.boost_ingage && currentTime - lastBoost > boostCooldown){
-        ship.boost_ingage = false;
+    if (ship.boostEngage && currentTime - lastBoost > boostCooldown){
+        ship.boostEngage = false;
     }
     if (keys["ArrowLeft"] || keys["a"]) ship.angle -= 2.75;
     if (keys["ArrowRight"] || keys["d"]) ship.angle += 2.75;
-    if (keys["ArrowUp"] || keys["w"] && ship.boost_ingage) {
-        if (Math.abs(ship.velocityX) < 10) ship.velocityX += Math.sin(ship.angle * Math.PI / 180) * 0.07;
-        if (Math.abs(ship.velocityY) < 10) ship.velocityY += Math.cos(ship.angle * Math.PI / 180) * 0.07; 
+    if ((keys["ArrowUp"] || keys["w"]) && ship.boostEngage) {
+        if (Math.abs(ship.velocityX) < 14) ship.velocityX += Math.sin(ship.angle * Math.PI / 180) * 0.2;
+        if (Math.abs(ship.velocityY) < 14) ship.velocityY += Math.cos(ship.angle * Math.PI / 180) * 0.2; 
     } else if (keys["ArrowUp"] || keys["w"]) {
         if (Math.abs(ship.velocityX) < 7) ship.velocityX += Math.sin(ship.angle * Math.PI / 180) * 0.05;
         if (Math.abs(ship.velocityY) < 7) ship.velocityY += Math.cos(ship.angle * Math.PI / 180) * 0.05; 
-    } else if (keys["ArrowDown"] || keys["s"] && ship.boost_ingage) {
-        if (Math.abs(ship.velocityX) < 7) ship.velocityX -= Math.sin(ship.angle * Math.PI / 180) * 0.003;
-        if (Math.abs(ship.velocityY) < 7) ship.velocityY -= Math.cos(ship.angle * Math.PI / 180) * 0.003;
+    } else if ((keys["ArrowDown"] || keys["s"]) && ship.boostEngage) {
+        if (Math.abs(ship.velocityX) < 7) ship.velocityX -= Math.sin(ship.angle * Math.PI / 180) * 0.05;
+        if (Math.abs(ship.velocityY) < 7) ship.velocityY -= Math.cos(ship.angle * Math.PI / 180) * 0.05;
     } else if (keys["ArrowDown"] || keys["s"]) {
         if (Math.abs(ship.velocityX) < 7) ship.velocityX -= Math.sin(ship.angle * Math.PI / 180) * 0.002;
         if (Math.abs(ship.velocityY) < 7) ship.velocityY -= Math.cos(ship.angle * Math.PI / 180) * 0.002;
     } else {
-        ship.velocityX *= 0.990;
-        ship.velocityY *= 0.990;
+        ship.velocityX *= 0.99;
+        ship.velocityY *= 0.99;
     }
 
     if (keys[" "] && currentTime - lastBulletTime > bulletCooldown && ship.ammo > 0) { //Shoot a bullet
@@ -159,7 +157,6 @@ function updateHUD() { //Updates personal hud as well as the leaderboard
     const fillSize = ship.boost * 25;
     fillElement.style.width = `${fillSize}px`;
 
-
     const playerArray = Object.values(players);
     playerArray.sort((a, b) => b.score - a.score);
     const topPlayers = playerArray.splice(0, 5);
@@ -188,8 +185,6 @@ function render() {
     gameArea.style.top = offsetY + "px"
 
     //Render collectables
-    // TODO: When there is more than one player the collectables count increases by some crazy amount
-    // Fix this
     collectables.forEach((piece, index) => {
         if (!piece) return;
         if ((piece.x + offsetX >= -100 && piece.x + offsetX <= windowWidth + 100) && (piece.y + offsetY >= -100 && piece.y + offsetY <= windowHeight + 100)) {
@@ -202,7 +197,7 @@ function render() {
 
             gameArea.appendChild(collectableElement);
 
-            //Handle colisions with player (in a dope af way)
+            //Handle colisions with player
             const a = (ship.x + (ship.size / 2)) - (piece.x + (piece.amount / 2));
             const b = (ship.y + (ship.size / 2)) - (piece.y + (piece.amount / 2));
             const distance = Math.sqrt((a ** 2) + (b ** 2));
@@ -213,8 +208,8 @@ function render() {
                     ship.score += piece.amount;
                 } else if (piece.type == "health") {
                     ship.health += piece.amount;
-                    } else if (piece.type == "boost" && ship.boost < 4) {
-                        ship.boost += 1;
+                } else if (piece.type == "boost" && ship.boost < 4) {
+                    ship.boost += 1;
                 }
                 collectables.splice(index, 1);
                 socket.emit("removeCollectable", index);
@@ -229,6 +224,7 @@ function render() {
     //Render ships
     Object.values(players).forEach(player => {
         if (!player) return;
+        if (player.id == socket.id) player = ship; //Make sure the most current version of self is used. (fixes weird lag client side)
         if ((player.x + offsetX >= -100 && player.x + offsetX <= (windowWidth + 100)) && (player.y + offsetY >= -100 && player.y + offsetY <= (windowHeight + 100))) {
             const playerElement = document.createElement("div");
             playerElement.classList.add("player");
@@ -254,7 +250,7 @@ function render() {
             flameElement.style.height = "0";
             flameElement.style.borderStyle = "solid";
             flameElement.style.borderWidth = `${flameHeight}px ${player.size / 4}px 0 ${player.size / 4}px`;
-            if (ship.boost_ingage) flameElement.style.borderColor = `purple transparent transparent transparent`;
+            if (ship.boostEngage) flameElement.style.borderColor = `purple transparent transparent transparent`;
             else flameElement.style.borderColor = `orange transparent transparent transparent`;
 
             // Add the flame to the player element
@@ -343,6 +339,8 @@ function gameLoop() {
         controlPlayer();
         updateHUD();
         accumulatedTime -= fixedTimeStep;
+
+        console.log(ship.velocityX, ship.velocityY);
     }
     //Have the things happen out of while loop as much as possible.
     render();
