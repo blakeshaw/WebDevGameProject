@@ -47,13 +47,6 @@ let leaderboard = {};
 let sortedLeaderboard = [];
 socket.on("players", (all_players) => { //Server sends updated list of players (locations, scores, etc.)
     players = all_players;
-    //ship = all_players[socket.id];
-    if (!ship) return;
-
-    if (ship.health <= 0) { //if the player has died
-        window.location.href = '/';
-        socket.emit("makeCollectables", ship.x, ship.y, ship.ammo);
-    }
 });
 socket.on("asteroids", (all_asteroids) => { // Server sends updated asteroids
     asteroids = all_asteroids;
@@ -66,6 +59,9 @@ socket.on("collectables", (all_collectables) => { //Server sends update collecta
 });
 socket.on("playerShot", (damage) => {
     ship.health -= damage;
+});
+socket.on("returnToTitle", () =>{
+    window.location.href = "/html/index.html";
 });
 
 
@@ -157,7 +153,6 @@ function updateHUD() { //Updates personal hud as well as the leaderboard
     const fillElement = document.getElementById("fill");
     const fillSize = ship.boost * 25;
     fillElement.style.width = `${fillSize}px`;
-
 
     const playerArray = Object.values(players);
     playerArray.sort((a, b) => b.score - a.score);

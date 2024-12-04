@@ -325,6 +325,10 @@ function updateBullets() {
       if (distance < player.size / 2 && bullet.id != player.id) {
         console.log(bullet.id, player.id);
         player.health -= bullet.damage;
+
+        if(player.health <= 0 && players[bullet.id]){
+          players[bullet.id].score += player.score / 2;
+        }
         bullet.updatesLeft = 0;
         io.to(player.id).emit("playerShot", bullet.damage);
       }
@@ -344,6 +348,21 @@ setInterval(updateBullets, 32);
 
 function updatePlayers() {
   io.emit('players', players);
+
+  Object.values(players).forEach(player => {
+    if(player.health <= 0){
+      io.to(player.id).emit("returnToTitle");
+
+      collectables.push({
+        x: player.x,
+        y: player.y,
+        amount: player.ammo,
+        type: "ammo",
+      });
+
+      delete players[player.id];
+    }
+  })
 }
 setInterval(updatePlayers, 32);
 
