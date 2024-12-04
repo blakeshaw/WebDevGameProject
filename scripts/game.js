@@ -217,8 +217,8 @@ function render() {
                 collectables.splice(index, 1);
                 socket.emit("removeCollectable", index);
             }else if(distance < ship.size * 1.5) {
-                piece.x += ((ship.x + (ship.size / 2)) - piece.x) * 0.2;
-                piece.y += ((ship.y + (ship.size / 2)) - piece.y) * 0.2;
+                piece.x += ((ship.x + (ship.size / 2)) - piece.x) * 0.4;
+                piece.y += ((ship.y + (ship.size / 2)) - piece.y) * 0.4;
                 socket.emit("updateCollectables", piece, index);
             }
         }
