@@ -162,8 +162,6 @@ function render() {
     gameArea.style.top = offsetY + "px"
 
     //Render collectables
-    // TODO: When there is more than one player the collectables count increases by some crazy amount
-    // Fix this
     collectables.forEach((piece, index) => {
         if (!piece) return;
         if ((piece.x + offsetX >= -100 && piece.x + offsetX <= windowWidth + 100) && (piece.y + offsetY >= -100 && piece.y + offsetY <= windowHeight + 100)) {
@@ -176,7 +174,7 @@ function render() {
 
             gameArea.appendChild(collectableElement);
 
-            //Handle colisions with player (in a dope af way)
+            //Handle colisions with player
             const a = (ship.x + (ship.size / 2)) - (piece.x + (piece.amount / 2));
             const b = (ship.y + (ship.size / 2)) - (piece.y + (piece.amount / 2));
             const distance = Math.sqrt((a ** 2) + (b ** 2));
