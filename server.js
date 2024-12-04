@@ -351,15 +351,15 @@ function updatePlayers() {
 
   Object.values(players).forEach(player => {
     if(player.health <= 0){
-      io.to(player.id).emit("returnToTitle");
 
-      collectables.push({
+      /*collectables.push({
         x: player.x,
         y: player.y,
         amount: player.ammo,
         type: "ammo",
-      });
+      });*/
 
+      io.to(player.id).emit("returnToTitle");
       delete players[player.id];
     }
   })

@@ -92,8 +92,8 @@ function controlPlayer() {
     if (keys["ArrowLeft"] || keys["a"]) ship.angle -= 2.75;
     if (keys["ArrowRight"] || keys["d"]) ship.angle += 2.75;
     if ((keys["ArrowUp"] || keys["w"]) && ship.boostEngage) {
-        if (Math.abs(ship.velocityX) < 14) ship.velocityX += Math.sin(ship.angle * Math.PI / 180) * 0.2;
-        if (Math.abs(ship.velocityY) < 14) ship.velocityY += Math.cos(ship.angle * Math.PI / 180) * 0.2; 
+        if (Math.abs(ship.velocityX) < 12) ship.velocityX += Math.sin(ship.angle * Math.PI / 180) * 0.2;
+        if (Math.abs(ship.velocityY) < 12) ship.velocityY += Math.cos(ship.angle * Math.PI / 180) * 0.2; 
     } else if (keys["ArrowUp"] || keys["w"]) {
         if (Math.abs(ship.velocityX) < 7) ship.velocityX += Math.sin(ship.angle * Math.PI / 180) * 0.05;
         if (Math.abs(ship.velocityY) < 7) ship.velocityY += Math.cos(ship.angle * Math.PI / 180) * 0.05; 
@@ -101,8 +101,8 @@ function controlPlayer() {
         if (Math.abs(ship.velocityX) < 7) ship.velocityX -= Math.sin(ship.angle * Math.PI / 180) * 0.05;
         if (Math.abs(ship.velocityY) < 7) ship.velocityY -= Math.cos(ship.angle * Math.PI / 180) * 0.05;
     } else if (keys["ArrowDown"] || keys["s"]) {
-        if (Math.abs(ship.velocityX) < 7) ship.velocityX -= Math.sin(ship.angle * Math.PI / 180) * 0.002;
-        if (Math.abs(ship.velocityY) < 7) ship.velocityY -= Math.cos(ship.angle * Math.PI / 180) * 0.002;
+        if (Math.abs(ship.velocityX) < 7) ship.velocityX -= Math.sin(ship.angle * Math.PI / 180) * 0.025;
+        if (Math.abs(ship.velocityY) < 7) ship.velocityY -= Math.cos(ship.angle * Math.PI / 180) * 0.025;
     } else {
         ship.velocityX *= 0.99;
         ship.velocityY *= 0.99;
