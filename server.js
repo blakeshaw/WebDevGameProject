@@ -339,7 +339,7 @@ function updateBullets() {
   });
   io.emit('bullets', bullets);
 }
-setInterval(updateBullets, 16);
+setInterval(updateBullets, 32);
 
 function updatePlayers() {
   io.emit('players', players);
