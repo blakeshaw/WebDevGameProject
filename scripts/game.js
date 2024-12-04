@@ -31,7 +31,7 @@ let ship = { //Initialize a new ship for the player
     score: 0,
     ammo: 0,
     boost: 0,
-    boost_ingage: false,
+    boostEngague: false,
 }
 
 socket.emit('newClient', ship); //Tell the server about the new player
@@ -83,31 +83,31 @@ function controlPlayer() {
     ship.size = 20 + (ship.health * 2);
     //ingage boost
     const currentTime = Date.now();
-    if (keys["Shift"] && !ship.boost_ingage && ship.boost > 0) {
-        ship.boost_ingage = true;
+    if (keys["Shift"] && !ship.boostEngague && ship.boost > 0) {
+        ship.boostEngague = true;
         ship.boost -= 1;
         lastBoost = currentTime;
     }
-    if (ship.boost_ingage && currentTime - lastBoost > boostCooldown){
-        ship.boost_ingage = false;
+    if (ship.boostEngague && currentTime - lastBoost > boostCooldown){
+        ship.boostEngague = false;
     }
     if (keys["ArrowLeft"] || keys["a"]) ship.angle -= 2.75;
     if (keys["ArrowRight"] || keys["d"]) ship.angle += 2.75;
-    if (keys["ArrowUp"] || keys["w"] && ship.boost_ingage) {
-        if (Math.abs(ship.velocityX) < 10) ship.velocityX += Math.sin(ship.angle * Math.PI / 180) * 0.07;
-        if (Math.abs(ship.velocityY) < 10) ship.velocityY += Math.cos(ship.angle * Math.PI / 180) * 0.07; 
+    if ((keys["ArrowUp"] || keys["w"]) && ship.boostEngague) {
+        if (Math.abs(ship.velocityX) < 14) ship.velocityX += Math.sin(ship.angle * Math.PI / 180) * 0.2;
+        if (Math.abs(ship.velocityY) < 14) ship.velocityY += Math.cos(ship.angle * Math.PI / 180) * 0.2; 
     } else if (keys["ArrowUp"] || keys["w"]) {
         if (Math.abs(ship.velocityX) < 7) ship.velocityX += Math.sin(ship.angle * Math.PI / 180) * 0.05;
         if (Math.abs(ship.velocityY) < 7) ship.velocityY += Math.cos(ship.angle * Math.PI / 180) * 0.05; 
-    } else if (keys["ArrowDown"] || keys["s"] && ship.boost_ingage) {
-        if (Math.abs(ship.velocityX) < 7) ship.velocityX -= Math.sin(ship.angle * Math.PI / 180) * 0.003;
-        if (Math.abs(ship.velocityY) < 7) ship.velocityY -= Math.cos(ship.angle * Math.PI / 180) * 0.003;
+    } else if ((keys["ArrowDown"] || keys["s"]) && ship.boostEngague) {
+        if (Math.abs(ship.velocityX) < 7) ship.velocityX -= Math.sin(ship.angle * Math.PI / 180) * 0.05;
+        if (Math.abs(ship.velocityY) < 7) ship.velocityY -= Math.cos(ship.angle * Math.PI / 180) * 0.05;
     } else if (keys["ArrowDown"] || keys["s"]) {
         if (Math.abs(ship.velocityX) < 7) ship.velocityX -= Math.sin(ship.angle * Math.PI / 180) * 0.002;
         if (Math.abs(ship.velocityY) < 7) ship.velocityY -= Math.cos(ship.angle * Math.PI / 180) * 0.002;
     } else {
-        ship.velocityX *= 0.990;
-        ship.velocityY *= 0.990;
+        ship.velocityX *= 0.99;
+        ship.velocityY *= 0.99;
     }
 
     if (keys[" "] && currentTime - lastBulletTime > bulletCooldown && ship.ammo > 0) { //Shoot a bullet
@@ -208,8 +208,8 @@ function render() {
                     ship.score += piece.amount;
                 } else if (piece.type == "health") {
                     ship.health += piece.amount;
-                    } else if (piece.type == "boost" && ship.boost < 4) {
-                        ship.boost += 1;
+                } else if (piece.type == "boost" && ship.boost < 4) {
+                    ship.boost += 1;
                 }
                 collectables.splice(index, 1);
                 socket.emit("removeCollectable", index);
@@ -249,7 +249,7 @@ function render() {
             flameElement.style.height = "0";
             flameElement.style.borderStyle = "solid";
             flameElement.style.borderWidth = `${flameHeight}px ${player.size / 4}px 0 ${player.size / 4}px`;
-            if (ship.boost_ingage) flameElement.style.borderColor = `purple transparent transparent transparent`;
+            if (ship.boostEngague) flameElement.style.borderColor = `purple transparent transparent transparent`;
             else flameElement.style.borderColor = `orange transparent transparent transparent`;
 
             // Add the flame to the player element
@@ -338,6 +338,8 @@ function gameLoop() {
         controlPlayer();
         updateHUD();
         accumulatedTime -= fixedTimeStep;
+
+        console.log(ship.velocityX, ship.velocityY);
     }
     //Have the things happen out of while loop as much as possible.
     render();
