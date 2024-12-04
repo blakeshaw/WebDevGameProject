@@ -17,7 +17,7 @@ app.use(express.static(__dirname));
 let players = {};
 let asteroids = [];
 let collectables = [];
-let collectableTypes = ["ammo", "health"];
+let collectableTypes = ["ammo", "health", "boost"];
 let bullets = [];
 
 let width = 5000;
@@ -93,10 +93,11 @@ io.on('connection', (socket) => {
 
 function makeCollectables() {
   while (collectables.length < 300) {
-    const type = Math.round(Math.random() * 10);
+    const type = Math.round(Math.random() * 100);
 
     let collectableType = collectableTypes[0];
-    if (type == 0) collectableType = collectableTypes[1];
+    if (type < 15) collectableType = collectableTypes[1];
+    if (type < 5) collectableType = collectableTypes[2];
 
     collectables.push({
       x: Math.random() * width,
