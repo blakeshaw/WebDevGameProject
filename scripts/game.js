@@ -31,7 +31,7 @@ let ship = { //Initialize a new ship for the player
     score: 0,
     ammo: 0,
     boost: 0,
-    boostEngague: false,
+    boostEngage: false,
 }
 
 socket.emit('newClient', ship); //Tell the server about the new player
@@ -83,23 +83,23 @@ function controlPlayer() {
     ship.size = 20 + (ship.health * 2);
     //ingage boost
     const currentTime = Date.now();
-    if (keys["Shift"] && !ship.boostEngague && ship.boost > 0) {
-        ship.boostEngague = true;
+    if (keys["Shift"] && !ship.boostEngage && ship.boost > 0) {
+        ship.boostEngage = true;
         ship.boost -= 1;
         lastBoost = currentTime;
     }
-    if (ship.boostEngague && currentTime - lastBoost > boostCooldown){
-        ship.boostEngague = false;
+    if (ship.boostEngage && currentTime - lastBoost > boostCooldown){
+        ship.boostEngage = false;
     }
     if (keys["ArrowLeft"] || keys["a"]) ship.angle -= 2.75;
     if (keys["ArrowRight"] || keys["d"]) ship.angle += 2.75;
-    if ((keys["ArrowUp"] || keys["w"]) && ship.boostEngague) {
+    if ((keys["ArrowUp"] || keys["w"]) && ship.boostEngage) {
         if (Math.abs(ship.velocityX) < 14) ship.velocityX += Math.sin(ship.angle * Math.PI / 180) * 0.2;
         if (Math.abs(ship.velocityY) < 14) ship.velocityY += Math.cos(ship.angle * Math.PI / 180) * 0.2; 
     } else if (keys["ArrowUp"] || keys["w"]) {
         if (Math.abs(ship.velocityX) < 7) ship.velocityX += Math.sin(ship.angle * Math.PI / 180) * 0.05;
         if (Math.abs(ship.velocityY) < 7) ship.velocityY += Math.cos(ship.angle * Math.PI / 180) * 0.05; 
-    } else if ((keys["ArrowDown"] || keys["s"]) && ship.boostEngague) {
+    } else if ((keys["ArrowDown"] || keys["s"]) && ship.boostEngage) {
         if (Math.abs(ship.velocityX) < 7) ship.velocityX -= Math.sin(ship.angle * Math.PI / 180) * 0.05;
         if (Math.abs(ship.velocityY) < 7) ship.velocityY -= Math.cos(ship.angle * Math.PI / 180) * 0.05;
     } else if (keys["ArrowDown"] || keys["s"]) {
@@ -249,7 +249,7 @@ function render() {
             flameElement.style.height = "0";
             flameElement.style.borderStyle = "solid";
             flameElement.style.borderWidth = `${flameHeight}px ${player.size / 4}px 0 ${player.size / 4}px`;
-            if (ship.boostEngague) flameElement.style.borderColor = `purple transparent transparent transparent`;
+            if (ship.boostEngage) flameElement.style.borderColor = `purple transparent transparent transparent`;
             else flameElement.style.borderColor = `orange transparent transparent transparent`;
 
             // Add the flame to the player element
