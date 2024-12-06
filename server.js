@@ -392,6 +392,7 @@ makeAI();
 
 function updateAI() {
   Object.values(players).forEach(player => {
+    if(!player) return;
     if (player.id[0] + player.id[1] !== "ai") return; //If the player isn't an AI return.
 
     let target = null; 
@@ -459,7 +460,7 @@ function updateAI() {
     }
   });
 }
-setInterval(updateAI, 32);
+//setInterval(updateAI, 32);
 
 function logStuff() {
   console.log("Asteroid count: " + asteroids.length);
